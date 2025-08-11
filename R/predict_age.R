@@ -246,14 +246,14 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
                                            "panTissue", epiClock))))
   
   # convert to wide format
-  targetClocks <- c("Amin.LUC.v1", "Steve.ElasticEpi.AgeTraf", 
-                    "Steve.InterventionClock.AgeTraf", "Steve.DevelopmentClock.AgeTraf", 
-                    "Ake.UniClock2", "Ake.UniClock3", "Ake.DNAmDuoGrimAge411", 
+  targetClocks <- c("LifespanUberClock", "DNAmAgeElasticFinal", 
+                    "DNAmAgeInterventionFinal", "DNAmAgeDevelopmentFinal", 
+                    "Ake.UniClock2", "Ake.UniClock3", 
                     "Ensemble.Static", "Ensemble.Static.Top", 
                     "EnsembleAge.Dynamic", "EnsembleDualAge.Static")
-  newNames <- c("LifespanUberClock", "DNAmAgeFinal", 
+  newNames <- c("LifespanUberClock", "DNAmAgeElasticFinal", 
                 "DNAmAgeInterventionFinal", "DNAmAgeDevelopmentFinal",
-                "UniversalClock2", "UniversalClock3", "DuoGrimAge411", 
+                "UniversalClock2", "UniversalClock3", 
                 "Ensemble.Static", "Ensemble.Static.Top",
                 "EnsembleAge.Dynamic", "EnsembleDualAge.Static")
   
@@ -269,6 +269,9 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
     dplyr::select(Basename, epiClock, AgeAccelation) %>% 
     spread(key = "epiClock", value = "AgeAccelation") %>% 
     left_join(dat1, by = "Basename")
+  
+  # For compatibility with user functions, also return the long format
+  attr(dat2, "long_format") <- ageResults
   
   return(dat2)
 }

@@ -24,7 +24,21 @@ preprocess_methylation_data <- function(dat0sesame, samps, min_coverage = 0.8,
   
   if (verbose) cat("Starting data preprocessing...\n")
   
-  # Validate input data
+  # First, detect and fix data orientation
+  if (verbose) cat("Checking data orientation...\n")
+  orientation_result <- detect_and_fix_orientation(dat0sesame, samps, verbose = verbose)
+  dat0sesame <- orientation_result$data
+  
+  # Check if this is Mammal320k data that needs probe mapping
+  if (verbose) cat("Checking for probe mapping requirements...\n")
+  platform_check <- detect_platform(dat0sesame)
+  if (platform_check == "Mammal320k" || 
+      sum(grepl("_[A-Z]+[0-9]*$", dat0sesame$CGid[1:min(100, nrow(dat0sesame))])) > 10) {
+    if (verbose) cat("Detected Mammal320k format. Mapping probe IDs to CpG IDs...\n")
+    dat0sesame <- map_mammal320k_probes(dat0sesame, verbose = verbose)
+  }
+  
+  # Validate input data after orientation fix
   validation <- validate_data_format(dat0sesame, samps)
   if (!validation$valid) {
     stop("Data validation failed:\n", paste(validation$issues, collapse = "\n"))
@@ -136,24 +150,35 @@ preprocess_methylation_data <- function(dat0sesame, samps, min_coverage = 0.8,
 #' 
 #' @param dat0sesame Data frame containing methylation data with CGid column
 #' @param samps Data frame containing sample information
-#' @param preprocess Logical indicating whether to preprocess the data (default: TRUE)
+#' @param efficient_loading Logical indicating whether to use efficient loading (default: TRUE)
 #' @param verbose Logical indicating whether to print progress messages (default: TRUE)
-#' @param ... Additional arguments passed to preprocess_methylation_data
+#' @param ... Additional arguments passed to preprocessing functions
 #' @return Data frame with age predictions and acceleration values
 #' @export
 #' @examples
 #' \dontrun{
-#' # Simple usage with automatic preprocessing
+#' # Simple usage with efficient loading
 #' results <- predict_age_simple(methylation_data, sample_info)
 #' 
-#' # With custom preprocessing options
+#' # With custom options
 #' results <- predict_age_simple(methylation_data, sample_info, 
-#'                              min_coverage = 0.7, handle_missing = "remove")
+#'                              efficient_loading = TRUE, verbose = TRUE)
 #' }
-predict_age_simple <- function(dat0sesame, samps, preprocess = TRUE, verbose = TRUE, ...) {
+predict_age_simple <- function(dat0sesame, samps, efficient_loading = TRUE, verbose = TRUE, ...) {
   
-  if (preprocess) {
-    if (verbose) cat("Preprocessing data...\n")
+  if (efficient_loading) {
+    if (verbose) cat("Using efficient data loading for clock predictions...\n")
+    processed <- efficiently_load_clock_data(dat0sesame, samps, verbose = verbose, ...)
+    dat_clean <- processed$data
+    samps_clean <- prepare_sample_sheet(samps)
+    
+    if (verbose) {
+      cat("Platform:", processed$platform, "\n")
+      cat("Compression ratio:", processed$compression_ratio, "(", nrow(dat_clean), "probes retained)\n")
+      cat("Using", nrow(dat_clean), "probes and", nrow(samps_clean), "samples\n")
+    }
+  } else {
+    if (verbose) cat("Using standard preprocessing...\n")
     processed <- preprocess_methylation_data(dat0sesame, samps, verbose = verbose, ...)
     dat_clean <- processed$data
     samps_clean <- processed$samples
@@ -162,9 +187,6 @@ predict_age_simple <- function(dat0sesame, samps, preprocess = TRUE, verbose = T
       cat("Platform:", processed$platform, "\n")
       cat("Using", nrow(dat_clean), "probes and", nrow(samps_clean), "samples\n")
     }
-  } else {
-    dat_clean <- dat0sesame
-    samps_clean <- prepare_sample_sheet(samps)
   }
   
   if (verbose) cat("Running age predictions...\n")

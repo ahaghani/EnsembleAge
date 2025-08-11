@@ -1,13 +1,17 @@
 Package: EnsembleAge
 Type: Package
 Title: Epigenetic Age Prediction Using Ensemble Clock Methods
-Version: 0.1.0
-Author: Amin Haghani
-Maintainer: Amin Haghani <ahaghani@altoslabs.com>
+Version: 1.0.0
+Authors@R: c(
+    person("Amin", "Haghani", email = "ahaghani@altoslabs.com", role = c("aut", "cre"))
+)
 Description: This package provides tools for predicting epigenetic age using 
     ensemble methods. It includes multiple clock types including Universal Clocks,
-    Elastic Epigenetic clocks, and static ensemble methods for accurate age 
-    prediction across various tissues and species.
+    Elastic Epigenetic clocks, static ensemble methods, and dynamic ensemble clocks 
+    for accurate age prediction across various tissues and species. This package 
+    accompanies the open access publication by Haghani & Horvath et al. (2025) 
+    in GeroScience (DOI: 10.1007/s11357-025-01808-1). The clocks are freely 
+    available for research use.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

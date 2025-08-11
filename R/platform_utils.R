@@ -130,29 +130,98 @@ validate_data_format <- function(dat0sesame, samps) {
 #' sample_info <- data.frame(Basename = c("sample1", "sample2"))
 #' prepared_samples <- prepare_sample_sheet(sample_info)
 #' }
-prepare_sample_sheet <- function(samps, default_species = "Mus musculus", default_age = 0) {
+prepare_sample_sheet <- function(samps, verbose = TRUE) {
   
-  # Add default columns if missing
-  if (!"SpeciesLatinName" %in% names(samps)) {
-    samps <- samps %>% mutate(SpeciesLatinName = default_species)
+  missing_vars <- character(0)
+  defaults_applied <- character(0)
+  
+  # Ensure Basename column exists
+  if (!"Basename" %in% names(samps)) {
+    if ("Sample_Name" %in% names(samps)) {
+      samps$Basename <- samps$Sample_Name
+      if (verbose) cat("Using 'Sample_Name' column as 'Basename'\n")
+    } else {
+      stop("Sample sheet must contain either 'Basename' or 'Sample_Name' column")
+    }
   }
   
+  # Ensure Age column exists - this is truly required for clock predictions
   if (!"Age" %in% names(samps)) {
-    samps <- samps %>% mutate(Age = default_age)
+    stop("Sample sheet must contain 'Age' column with chronological ages in years")
   }
   
+  # Add missing optional columns with defaults and track what was added
   if (!"Female" %in% names(samps)) {
     samps <- samps %>% mutate(Female = NA)
+    missing_vars <- c(missing_vars, "Female")
+    defaults_applied <- c(defaults_applied, "Female = NA (sex unknown)")
   }
   
   if (!"Tissue" %in% names(samps)) {
-    samps <- samps %>% mutate(Tissue = NA)
+    samps <- samps %>% mutate(Tissue = "Unknown")
+    missing_vars <- c(missing_vars, "Tissue")
+    defaults_applied <- c(defaults_applied, "Tissue = 'Unknown'")
   }
   
-  # Clean up existing values
-  samps <- samps %>% 
-    mutate(Age = ifelse(is.na(Age), default_age, Age)) %>% 
-    mutate(SpeciesLatinName = ifelse(is.na(SpeciesLatinName), default_species, SpeciesLatinName))
+  if (!"SpeciesLatinName" %in% names(samps)) {
+    samps <- samps %>% mutate(SpeciesLatinName = "Mus musculus")
+    missing_vars <- c(missing_vars, "SpeciesLatinName")
+    defaults_applied <- c(defaults_applied, "SpeciesLatinName = 'Mus musculus'")
+  }
+  
+  # Notify user about defaults applied
+  if (length(missing_vars) > 0 && verbose) {
+    cat("Missing variables detected. Applied defaults:\n")
+    for (default in defaults_applied) {
+      cat("  -", default, "\n")
+    }
+    cat("For better predictions, consider providing these variables in your sample sheet.\n")
+  }
+  
+  # Convert data types with error handling
+  tryCatch({
+    samps$Age <- as.numeric(samps$Age)
+    if (any(is.na(samps$Age))) {
+      warning("Some Age values could not be converted to numeric. Check your data.")
+    }
+  }, error = function(e) {
+    stop("Error converting Age column to numeric: ", e$message)
+  })
+  
+  # Handle Female column conversion
+  if (!all(is.na(samps$Female))) {
+    tryCatch({
+      samps$Female <- as.numeric(samps$Female)
+      # Validate Female values (should be 0, 1, or NA)
+      invalid_female <- samps$Female[!is.na(samps$Female) & !samps$Female %in% c(0, 1)]
+      if (length(invalid_female) > 0) {
+        warning("Female column should contain only 0 (male), 1 (female), or NA. Invalid values found.")
+      }
+    }, error = function(e) {
+      warning("Error converting Female column: ", e$message, ". Setting to NA.")
+      samps$Female <- NA
+    })
+  }
+  
+  # Ensure character columns
+  samps$Tissue <- as.character(samps$Tissue)
+  samps$SpeciesLatinName <- as.character(samps$SpeciesLatinName)
+  samps$Basename <- as.character(samps$Basename)
+  
+  # Validate that we have samples
+  if (nrow(samps) == 0) {
+    stop("Sample sheet is empty")
+  }
+  
+  # Check for duplicate Basenames
+  if (any(duplicated(samps$Basename))) {
+    duplicates <- samps$Basename[duplicated(samps$Basename)]
+    warning("Duplicate sample names found: ", paste(unique(duplicates), collapse = ", "))
+  }
+  
+  if (verbose) {
+    cat("Sample sheet prepared:", nrow(samps), "samples\n")
+  }
   
   return(samps)
 }
@@ -247,4 +316,93 @@ check_probe_coverage <- function(dat0sesame) {
   }
   
   return(coverage_results[order(coverage_results$Coverage_Percent, decreasing = TRUE), ])
+}
+
+#' Map probe IDs to CpG IDs for Mammal320k data
+#'
+#' This function maps Mammal320k probe IDs (with suffixes like _BC21) to standard CpG IDs
+#' using the annotation file.
+#' 
+#' @param dat0sesame Data frame containing methylation data with probe IDs
+#' @param verbose Logical indicating whether to print progress messages (default: TRUE)
+#' @return Data frame with CpG IDs mapped and duplicates handled
+#' @export
+#' @examples
+#' \dontrun{
+#' mapped_data <- map_mammal320k_probes(methylation_data)
+#' }
+map_mammal320k_probes <- function(dat0sesame, verbose = TRUE) {
+  
+  # Load Mammal320k annotation
+  annotation_file <- system.file("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS", 
+                                 package = "EnsembleAge")
+  if (annotation_file == "") {
+    annotation_file <- file.path("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS")
+  }
+  
+  if (!file.exists(annotation_file)) {
+    warning("Mammal320k annotation file not found. Cannot map probe IDs.")
+    return(dat0sesame)
+  }
+  
+  annotation <- readRDS(annotation_file)
+  
+  if (verbose) {
+    cat("Loaded Mammal320k annotation with", nrow(annotation), "probes\n")
+  }
+  
+  # Check if CGid column exists, if not assume first column contains probe IDs
+  if ("CGid" %in% names(dat0sesame)) {
+    probe_col <- "CGid"
+  } else {
+    probe_col <- names(dat0sesame)[1]
+    if (verbose) cat("No CGid column found, using", probe_col, "as probe ID column\n")
+  }
+  
+  # Get current probe IDs
+  current_probes <- dat0sesame[[probe_col]]
+  
+  # Check if probes need mapping (have suffixes)
+  has_suffixes <- sum(grepl("_[A-Z]+[0-9]*$", current_probes))
+  
+  if (has_suffixes == 0) {
+    if (verbose) cat("Probe IDs appear to be clean CpG IDs already. No mapping needed.\n")
+    if (probe_col != "CGid") {
+      names(dat0sesame)[names(dat0sesame) == probe_col] <- "CGid"
+    }
+    return(dat0sesame)
+  }
+  
+  if (verbose) {
+    cat("Found", has_suffixes, "probes with suffixes that need mapping\n")
+  }
+  
+  # Create mapping from annotation
+  probe_mapping <- annotation %>%
+    dplyr::select(Probe_ID, CGid) %>%
+    filter(!is.na(CGid) & !is.na(Probe_ID))
+  
+  # Map probe IDs to CpG IDs
+  dat_mapped <- dat0sesame %>%
+    dplyr::rename(Probe_ID = !!probe_col) %>%
+    left_join(probe_mapping, by = "Probe_ID") %>%
+    filter(!is.na(CGid)) %>%
+    dplyr::select(-Probe_ID)
+  
+  # Handle duplicates by taking the mean
+  if (any(duplicated(dat_mapped$CGid))) {
+    if (verbose) cat("Found duplicate CpG IDs after mapping. Taking mean values...\n")
+    
+    sample_cols <- names(dat_mapped)[names(dat_mapped) != "CGid"]
+    dat_mapped <- dat_mapped %>%
+      group_by(CGid) %>%
+      dplyr::summarise(dplyr::across(dplyr::all_of(sample_cols), mean, na.rm = TRUE), .groups = "drop")
+  }
+  
+  if (verbose) {
+    cat("Mapping complete:", nrow(dat_mapped), "unique CpG IDs retained\n")
+    cat("Original probes:", nrow(dat0sesame), "-> Mapped CpGs:", nrow(dat_mapped), "\n")
+  }
+  
+  return(dat_mapped)
 }

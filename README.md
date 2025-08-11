@@ -4,7 +4,12 @@ An R package for predicting epigenetic age using ensemble clock methods.
 
 ## Description
 
-EnsembleAge provides tools for predicting epigenetic age using various clock methods including Universal Clocks, Elastic Epigenetic clocks, and static ensemble methods. The package is designed to work with methylation data and provides accurate age prediction across various tissues and species.
+EnsembleAge provides tools for predicting epigenetic age using various clock methods including Universal Clocks, Elastic Epigenetic clocks, static ensemble methods, and dynamic ensemble clocks. The package is designed to work with methylation data and provides accurate age prediction across various tissues and species.
+
+**This package accompanies the open access publication:**
+> Haghani, A., et al. (2025). [Paper Title]. *GeroScience*. DOI: [10.1007/s11357-025-01808-1](https://doi.org/10.1007/s11357-025-01808-1)
+
+The clocks and methods implemented in this package are freely available for research use under the open access license.
 
 ## Features
 
@@ -145,7 +150,22 @@ MIT
 
 If you use this package in your research, please cite:
 
-[Citation information to be added]
+```
+Haghani, A., et al. (2025). [Paper Title]. GeroScience. 
+DOI: 10.1007/s11357-025-01808-1
+```
+
+**BibTeX:**
+```bibtex
+@article{haghani2025ensembleage,
+  title={[Paper Title]},
+  author={Haghani, Amin and [other authors]},
+  journal={GeroScience},
+  year={2025},
+  doi={10.1007/s11357-025-01808-1},
+  url={https://doi.org/10.1007/s11357-025-01808-1}
+}
+```
 
 ## Contributing
 
