@@ -41,15 +41,67 @@ The package requires the following R packages:
 
 ## Usage
 
+### Quick Start
+
 ```r
 library(EnsembleAge)
 
-# Load your methylation data
-# dat0sesame should be a data frame with CGid column and sample columns
-# samps should be a data frame with sample information
+# Method 1: Simple prediction with automatic preprocessing
+results <- predict_age_simple(your_methylation_data, your_sample_info)
 
-# Predict ages
-results <- predictAgeAndAgeAcc(dat0sesame, samps)
+# Method 2: Manual control over preprocessing
+processed <- preprocess_methylation_data(your_methylation_data, your_sample_info)
+results <- predictAgeAndAgeAcc(processed$data, processed$samples)
+```
+
+### Complete Example with Synthetic Data
+
+```r
+library(EnsembleAge)
+
+# Create example data
+example_data <- create_example_methylation_data(n_probes = 2000, n_samples = 30)
+sample_info <- create_example_sample_info(sample_names = names(example_data)[-1])
+
+# Run complete analysis
+results <- run_example_analysis(n_probes = 2000, n_samples = 30)
+
+# View results
+head(results$age_predictions)
+```
+
+### Working with Different Platforms
+
+```r
+# Detect your platform
+platform <- detect_platform(your_data)
+cat("Detected platform:", platform)
+
+# Check probe coverage
+coverage <- check_probe_coverage(your_data)
+print(coverage[coverage$Coverage_Percent > 80, ])  # Show well-covered clocks
+
+# Validate data format
+validation <- validate_data_format(your_data, your_samples)
+if (!validation$valid) {
+  print(validation$issues)
+}
+```
+
+### Custom Preprocessing
+
+```r
+# Preprocess with custom settings
+processed <- preprocess_methylation_data(
+  dat0sesame = your_data,
+  samps = your_samples,
+  min_coverage = 0.7,           # Lower coverage threshold
+  handle_missing = "impute",    # Impute missing values
+  verbose = TRUE
+)
+
+# Run predictions
+results <- predictAgeAndAgeAcc(processed$data, processed$samples)
 ```
 
 ## Data Requirements

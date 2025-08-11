@@ -43,6 +43,39 @@
 #' }
 predictAgeAndAgeAcc <- function(dat0sesame, samps) {
   
+  # Input validation
+  if (missing(dat0sesame) || missing(samps)) {
+    stop("Both dat0sesame and samps arguments are required")
+  }
+  
+  if (!is.data.frame(dat0sesame) || !is.data.frame(samps)) {
+    stop("Both dat0sesame and samps must be data frames")
+  }
+  
+  if (!"CGid" %in% names(dat0sesame)) {
+    stop("dat0sesame must contain a 'CGid' column with CpG identifiers")
+  }
+  
+  if (!"Basename" %in% names(samps)) {
+    stop("samps must contain a 'Basename' column with sample identifiers")
+  }
+  
+  # Check for matching samples
+  sample_cols <- names(dat0sesame)[!names(dat0sesame) %in% "CGid"]
+  matching_samples <- intersect(samps$Basename, sample_cols)
+  
+  if (length(matching_samples) == 0) {
+    stop("No matching samples found between dat0sesame columns and samps$Basename.\n",
+         "dat0sesame sample columns: ", paste(sample_cols[1:min(5, length(sample_cols))], collapse = ", "), "\n",
+         "samps$Basename values: ", paste(samps$Basename[1:min(5, nrow(samps))], collapse = ", "))
+  }
+  
+  if (length(matching_samples) < nrow(samps)) {
+    missing_samples <- setdiff(samps$Basename, sample_cols)
+    warning("Some samples in samps$Basename not found in dat0sesame: ",
+            paste(missing_samples[1:min(3, length(missing_samples))], collapse = ", "))
+  }
+  
   # Load species data
   species_file_path <- system.file("data", "anAgeUpdatedCaesarVersion51.csv", 
                                    package = "EnsembleAge")
@@ -163,6 +196,15 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
           mutate(AgeAccelation = as.vector(residuals(lm(epiAge ~ Age)))) %>% 
           dplyr::select(Basename, epiAge, AgeAccelation, Age, Female, Tissue)
           
+      } else if (grepl("EnsembleAge.Dynamic", names(epiclocks)[j]) && grepl("AgeTransformed", names(clocks)[i])) {
+        samp <- samps %>%
+          # predicting age
+          mutate(epiAge = as.numeric(as.matrix(dat1) %*% clock$Coef)) %>% 
+          mutate(AgeAccelation = as.vector(residuals(lm(epiAge ~ Age)))) %>% 
+          dplyr::select(Basename, Age, AgeAccelation, epiAge, Female, Tissue) %>%
+          # age transformation for EnsembleAge.Dynamic clocks with AgeTransformed
+          mutate(epiAge = anti.trafo(epiAge)) %>% 
+          mutate(AgeAccelation = as.vector(residuals(lm(epiAge ~ Age))))
       } else {
         samp <- samps %>%
           # predicting age
@@ -181,6 +223,10 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
   names(ageResults) <- names(epiclocks)
   
   ageResults <- rbindlist(ageResults, idcol = "clockFamily", fill = T) %>% 
+    # Clean up EnsembleAge.Dynamic clock names by converting X123.Name to Clock123.Name
+    mutate(epiClock = ifelse(grepl("^X[0-9]+\\.", epiClock), 
+                            gsub("^X([0-9]+)\\.", "Clock\\1.", epiClock), 
+                            epiClock)) %>%
     mutate(clockFamily = ifelse(grepl("(UniClock2)|(UniBloodClock2)|(UniSkinClock2)", epiClock), "Ake.UniClock2", 
                                 ifelse(grepl("(UniClock3)|(UniBloodClock3)|(UniSkinClock3)", epiClock), "Ake.UniClock3",
                                        ifelse(grepl("(Ake.DuoHumanMouse)", epiClock), "Ake.DuoHumanMouse", 
@@ -189,22 +235,19 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
     mutate(epiClock = ifelse(grepl("Skin", epiClock), "Skin", 
                              ifelse(grepl("Blood", epiClock), "Blood", 
                                     ifelse(grepl("(UniClock)|(DuoHumanMouse)|(Ake.DNAmDuoGrimAge)", epiClock), 
-                                           "panTissue", epiClock)))) %>%
-    mutate(epiClock = factor(epiClock, 
-                             levels = c("Blood","Liver","Heart","Kidney","Muscle","Cortex","Striatum","Cerebellum", 
-                                        "Brain", "Fibroblast", "Tail", "panTissue", "Skin"),
-                             labels = c("Blood","Liver","Heart","Kidney","Muscle","Cortex","Striatum","Cerebellum", 
-                                        "Brain", "Fibroblast", "Tail", "panTissue", "Skin")))
+                                           "panTissue", epiClock))))
   
   # convert to wide format
   targetClocks <- c("Amin.LUC.v1", "Steve.ElasticEpi.AgeTraf", 
                     "Steve.InterventionClock.AgeTraf", "Steve.DevelopmentClock.AgeTraf", 
                     "Ake.UniClock2", "Ake.UniClock3", "Ake.DNAmDuoGrimAge411", 
-                    "Ensemble.Static", "Ensemble.Static.Top")
+                    "Ensemble.Static", "Ensemble.Static.Top", 
+                    "EnsembleAge.Dynamic", "EnsembleDualAge.Static")
   newNames <- c("LifespanUberClock", "DNAmAgeFinal", 
                 "DNAmAgeInterventionFinal", "DNAmAgeDevelopmentFinal",
                 "UniversalClock2", "UniversalClock3", "DuoGrimAge411", 
-                "Ensemble.Static", "Ensemble.Static.Top")
+                "Ensemble.Static", "Ensemble.Static.Top",
+                "EnsembleAge.Dynamic", "EnsembleDualAge.Static")
   
   dat1 <- ageResults %>% 
     mutate(clockFamily = factor(clockFamily, levels = targetClocks, labels = newNames)) %>% 
