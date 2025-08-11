@@ -7,6 +7,11 @@
 #' @param adult.age Numeric adult age threshold (default: 1.2)
 #' @return Numeric vector of transformed ages
 #' @export
+#' @examples
+#' # Transform ages for epigenetic clock calculations
+#' ages <- c(0.5, 1.0, 2.0, 5.0)
+#' transformed <- trafo(ages)
+#' print(transformed)
 trafo <- function(x, offset = 0.06, adult.age = 1.2) {
   y <- ifelse(x <= adult.age, 
               log(x + offset),
@@ -23,6 +28,12 @@ trafo <- function(x, offset = 0.06, adult.age = 1.2) {
 #' @param adult.age Numeric adult age threshold (default: 1.2)
 #' @return Numeric vector of original ages
 #' @export
+#' @examples
+#' # Transform and then reverse transform ages
+#' ages <- c(0.5, 1.0, 2.0, 5.0)
+#' transformed <- trafo(ages)
+#' original <- anti.trafo(transformed)
+#' print(original)
 anti.trafo <- function(x, offset = 0.06, adult.age = 1.2) {
   ifelse(x <= log(adult.age + offset), 
          exp(x) - offset, 

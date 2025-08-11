@@ -1,0 +1,123 @@
+---
+title: "EnsembleAge: Epigenetic Age Prediction Using Ensemble Clock Methods"
+author: "Amin Haghani"
+date: "`r Sys.Date()`"
+output: 
+  BiocStyle::html_document:
+    toc: true
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{EnsembleAge: Epigenetic Age Prediction Using Ensemble Clock Methods}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+# Introduction
+
+EnsembleAge provides tools for predicting epigenetic age using various clock methods including Universal Clocks, Elastic Epigenetic clocks, static ensemble methods, and dynamic ensemble clocks. The package automatically detects your data platform and prepares the data accordingly for accurate age prediction across various tissues and species.
+
+This package accompanies the open access publication by Haghani et al. (2025): "EnsembleAge: enhancing epigenetic age assessment with a multi‑clock framework" in GeroScience (DOI: 10.1007/s11357-025-01808-1).
+
+## Installation
+
+```{r install, eval=FALSE}
+# Install devtools if you haven't already
+if (!requireNamespace("devtools", quietly = TRUE)) {
+    install.packages("devtools")
+}
+
+# Install EnsembleAge
+devtools::install_github("ahaghani/EnsembleAge")
+```
+
+## Basic Usage
+
+```{r basic_usage, eval=FALSE}
+library(EnsembleAge)
+
+# Basic usage - works with any supported platform automatically!
+results <- predict_all_clocks(your_methylation_data, your_sample_sheet)
+
+# View results by clock family
+head(results)
+```
+
+## Supported Platforms
+
+EnsembleAge automatically detects and handles multiple methylation array platforms:
+
+- **Mammal320k**: Mammalian Methylation Array (~320,000 probes)
+- **Mammal40k**: Reduced Mammalian Array (~40,000 probes)  
+- **Human EPIC**: Illumina EPIC Array (~850,000 probes)
+- **Human 450k**: Illumina 450k Array (~450,000 probes)
+
+## Data Requirements
+
+### Input Data Formats
+
+**Methylation Data:**
+- **Human**: Either `Probe_ID` (will auto-map) or `CGid` column
+- **Mouse/Mammal**: Either `CGid` or platform-specific probe IDs (will auto-convert)
+- **Values**: Beta values (0-1 range) for each sample
+
+**Sample Sheet (CSV):**
+- **Required**: `Basename` (sample names), `Age` (chronological age)
+- **Optional**: `Female` (0/1), `SpeciesLatinName`, `Tissue`
+
+## Clock Types
+
+The package includes multiple clock families:
+
+- **EnsembleAge.Static**: Main mouse ensemble clocks
+- **EnsembleAge.Dynamic**: Individual specialized mouse clocks  
+- **EnsembleDualAge.Static**: Human-mouse optimized clock
+- **UniClock2/3**: Universal mammalian clocks
+- **LifespanUberClock**: Lifespan-focused clocks
+- **DNAmAge***: Development, Elastic, Intervention clocks
+
+## Example Workflow
+
+```{r example, eval=FALSE}
+# Load your methylation data
+# Package automatically detects format and maps appropriately
+results <- predict_ensemble_static(methylation_data, sample_sheet)
+
+# Check what platform was detected
+cat("Platform detected:", attr(results, "platform"))
+
+# View age predictions
+head(results[c("Basename", "Age", "epiAge", "AgeAccelation")])
+```
+
+## Citation
+
+If you use this package in your research, please cite:
+
+```
+Haghani, A., et al. (2025). EnsembleAge: enhancing epigenetic age assessment with a multi‑clock framework. GeroScience.
+DOI: 10.1007/s11357-025-01808-1
+```
+
+## License
+
+MIT License - Free for research and commercial use.
+
+## Support
+
+- **Issues**: Report bugs or request features on our [GitHub issues page](https://github.com/ahaghani/EnsembleAge/issues)
+- **Questions**: Contact Amin Haghani at haghani_amin@yahoo.com
+
+## Session Information
+
+```{r sessionInfo}
+sessionInfo()
+``` 

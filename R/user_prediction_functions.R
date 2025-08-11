@@ -11,7 +11,7 @@
 #' @export
 #' @references Haghani, A., et al. (2025). GeroScience. DOI: 10.1007/s11357-025-01808-1
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Main mouse age prediction
 #' results <- predict_ensemble_static(methylation_data, sample_info)
 #' }
@@ -56,7 +56,7 @@ predict_ensemble_static <- function(dat0sesame, samps, efficient_loading = TRUE,
 #' @return Data frame with age predictions and acceleration values for dynamic ensemble clocks
 #' @export
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Individual mouse clock predictions
 #' results <- predict_ensemble_dynamic(methylation_data, sample_info)
 #' }

@@ -19,3 +19,10 @@ Numeric vector of original ages
 \description{
 This function performs the inverse of the age transformation used in epigenetic clock calculations.
 }
+\examples{
+# Transform and then reverse transform ages
+ages <- c(0.5, 1.0, 2.0, 5.0)
+transformed <- trafo(ages)
+original <- anti.trafo(transformed)
+print(original)
+}

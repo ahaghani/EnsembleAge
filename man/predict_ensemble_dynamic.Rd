@@ -28,7 +28,7 @@ Predict age using individual EnsembleAge dynamic clocks for mouse data.
 These are individual clocks that can be analyzed separately.
 }
 \examples{
-\dontrun{
+\donttest{
 # Individual mouse clock predictions
 results <- predict_ensemble_dynamic(methylation_data, sample_info)
 }

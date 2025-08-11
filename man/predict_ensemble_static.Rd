@@ -28,7 +28,7 @@ Predict age using the main EnsembleAge static clocks for mouse data.
 This is the primary clock for mouse age predictions.
 }
 \examples{
-\dontrun{
+\donttest{
 # Main mouse age prediction
 results <- predict_ensemble_static(methylation_data, sample_info)
 }
