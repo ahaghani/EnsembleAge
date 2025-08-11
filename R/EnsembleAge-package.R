@@ -42,9 +42,5 @@
 #' 
 #' @author Amin Haghani \email{ahaghani@@altoslabs.com}
 #' 
-#' @keywords internal
+#' @keywords package
 "_PACKAGE"
-
-## usethis namespace: start
-## usethis namespace: end
-NULL

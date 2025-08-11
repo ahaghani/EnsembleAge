@@ -45,7 +45,16 @@ Haghani, A., et al. (2025). EnsembleAge: enhancing epigenetic age assessment
 with a multi-clock framework. \emph{GeroScience}. 
 DOI: 10.1007/s11357-025-01808-1
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/ahaghani/EnsembleAge}
+  \item \doi{10.1007/s11357-025-01808-1}
+  \item Report bugs at \url{https://github.com/ahaghani/EnsembleAge/issues}
+}
+
+}
 \author{
 Amin Haghani \email{ahaghani@altoslabs.com}
 }
-\keyword{internal}
+\keyword{package}
