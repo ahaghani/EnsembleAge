@@ -205,6 +205,14 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
           # age transformation for EnsembleAge.Dynamic clocks with AgeTransformed
           mutate(epiAge = anti.trafo(epiAge)) %>% 
           mutate(AgeAccelation = as.vector(residuals(lm(epiAge ~ Age))))
+      } else if (grepl("EnsembleDualAge.Static", names(epiclocks)[j])) {
+        samp <- samps %>%
+          # predicting age for EnsembleDualAge.Static (uses RelativeAge transformation)
+          mutate(epiAge = as.numeric(as.matrix(dat1) %*% clock$Coef)) %>% 
+          # Convert RelativeAge back to chronological age: RelativeAge * maxAgeCaesar
+          mutate(epiAge = epiAge * maxAgeCaesar) %>%
+          mutate(AgeAccelation = as.vector(residuals(lm(epiAge ~ Age)))) %>% 
+          dplyr::select(Basename, Age, AgeAccelation, epiAge, Female, Tissue)
       } else {
         samp <- samps %>%
           # predicting age
