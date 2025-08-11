@@ -235,25 +235,22 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
     mutate(epiClock = ifelse(grepl("^X[0-9]+\\.", epiClock), 
                             gsub("^X([0-9]+)\\.", "Clock\\1.", epiClock), 
                             epiClock)) %>%
-    mutate(clockFamily = ifelse(grepl("(UniClock2)|(UniBloodClock2)|(UniSkinClock2)", epiClock), "Ake.UniClock2", 
-                                ifelse(grepl("(UniClock3)|(UniBloodClock3)|(UniSkinClock3)", epiClock), "Ake.UniClock3",
-                                       ifelse(grepl("(Ake.DuoHumanMouse)", epiClock), "Ake.DuoHumanMouse", 
-                                              ifelse(grepl("(Ake.DNAmDuoGrimAge411)", epiClock), "Ake.DNAmDuoGrimAge411",      
-                                                     clockFamily))))) %>%
+    mutate(clockFamily = ifelse(grepl("(UniClock2)|(UniBloodClock2)|(UniSkinClock2)", epiClock), "UniClock2", 
+                                ifelse(grepl("(UniClock3)|(UniBloodClock3)|(UniSkinClock3)", epiClock), "UniClock3", clockFamily))) %>%
     mutate(epiClock = ifelse(grepl("Skin", epiClock), "Skin", 
                              ifelse(grepl("Blood", epiClock), "Blood", 
-                                    ifelse(grepl("(UniClock)|(DuoHumanMouse)|(Ake.DNAmDuoGrimAge)", epiClock), 
+                                    ifelse(grepl("(UniClock)|(EnsemblDualAge)", epiClock), 
                                            "panTissue", epiClock))))
   
   # convert to wide format
   targetClocks <- c("LifespanUberClock", "DNAmAgeElasticFinal", 
                     "DNAmAgeInterventionFinal", "DNAmAgeDevelopmentFinal", 
-                    "Ake.UniClock2", "Ake.UniClock3", 
+                    "UniClock2", "UniClock3", 
                     "Ensemble.Static", "Ensemble.Static.Top", 
                     "EnsembleAge.Dynamic", "EnsembleDualAge.Static")
   newNames <- c("LifespanUberClock", "DNAmAgeElasticFinal", 
                 "DNAmAgeInterventionFinal", "DNAmAgeDevelopmentFinal",
-                "UniversalClock2", "UniversalClock3", 
+                "UniClock2", "UniClock3", 
                 "Ensemble.Static", "Ensemble.Static.Top",
                 "EnsembleAge.Dynamic", "EnsembleDualAge.Static")
   
