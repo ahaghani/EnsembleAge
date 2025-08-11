@@ -7,7 +7,7 @@ An R package for predicting epigenetic age using ensemble clock methods.
 EnsembleAge provides tools for predicting epigenetic age using various clock methods including Universal Clocks, Elastic Epigenetic clocks, static ensemble methods, and dynamic ensemble clocks. The package is designed to work with methylation data and provides accurate age prediction across various tissues and species.
 
 **This package accompanies the open access publication:**
-> Haghani, A., et al. (2025). [Paper Title]. *GeroScience*. DOI: [10.1007/s11357-025-01808-1](https://doi.org/10.1007/s11357-025-01808-1)
+> Haghani, A., et al. (2025). EnsembleAge: enhancing epigenetic age assessment with a multi‑clock framework. *GeroScience*. DOI: [10.1007/s11357-025-01808-1](https://doi.org/10.1007/s11357-025-01808-1)
 
 The clocks and methods implemented in this package are freely available for research use under the open access license.
 
@@ -31,7 +31,7 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 }
 
 # Install EnsembleAge
-devtools::install_github("your-username/EnsembleAge")
+devtools::install_github("ahaghani/EnsembleAge")
 ```
 
 ## Dependencies
@@ -151,14 +151,14 @@ MIT
 If you use this package in your research, please cite:
 
 ```
-Haghani, A., et al. (2025). [Paper Title]. GeroScience. 
+Haghani, A., et al. (2025). EnsembleAge: enhancing epigenetic age assessment with a multi‑clock framework. GeroScience. 
 DOI: 10.1007/s11357-025-01808-1
 ```
 
 **BibTeX:**
 ```bibtex
 @article{haghani2025ensembleage,
-  title={[Paper Title]},
+  title={EnsembleAge: enhancing epigenetic age assessment with a multi‑clock framework},
   author={Haghani, Amin and [other authors]},
   journal={GeroScience},
   year={2025},
@@ -173,4 +173,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Issues
 
-If you encounter any issues, please file them on the [GitHub issues page](https://github.com/your-username/EnsembleAge/issues).
+If you encounter any issues, please file them on the [GitHub issues page](https://github.com/ahaghani/EnsembleAge/issues).
