@@ -1,10 +1,9 @@
 Package: EnsembleAge
 Type: Package
 Title: Epigenetic Age Prediction Using Ensemble Clock Methods
-Version: 0.99.0
-Authors@R: c(
-    person("Amin", "Haghani", email = "dr.a.haghani@gmail.com", role = c("aut", "cre"))
-    )
+Version: 0.99.1
+Author: Amin Haghani <dr.a.haghani@gmail.com> [aut, cre]
+Maintainer: Amin Haghani <dr.a.haghani@gmail.com>
 Description: This package provides tools for predicting epigenetic age using
     ensemble methods. It includes multiple clock types including Universal Clocks,
     Elastic Epigenetic clocks, static ensemble methods, and dynamic ensemble clocks

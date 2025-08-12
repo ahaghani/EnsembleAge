@@ -139,11 +139,11 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
   samps <- samps %>% left_join(species, by = "SpeciesLatinName")
   
   # Load clock coefficients
-  clock_file_path <- system.file("data", "Clock coefficients.RDS", 
+  clock_file_path <- system.file("data", "Clock_coefficients.RDS", 
                                  package = "EnsembleAge")
   if (clock_file_path == "") {
     # Fallback to local file if package not installed
-    clock_file_path <- file.path("data", "Clock coefficients.RDS")
+    clock_file_path <- file.path("data", "Clock_coefficients.RDS")
   }
   epiclocks <- readRDS(clock_file_path)
   

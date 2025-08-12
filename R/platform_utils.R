@@ -282,9 +282,9 @@ prepare_sample_sheet <- function(samps, verbose = TRUE) {
 #' @examples
 #' available_clocks <- get_available_clocks("Mammal40k")
 get_available_clocks <- function(platform) {
-  clock_file_path <- system.file("data", "Clock coefficients.RDS", package = "EnsembleAge")
+  clock_file_path <- system.file("data", "Clock_coefficients.RDS", package = "EnsembleAge")
   if (clock_file_path == "") {
-    clock_file_path <- file.path("data", "Clock coefficients.RDS")
+    clock_file_path <- file.path("data", "Clock_coefficients.RDS")
   }
   
   if (!file.exists(clock_file_path)) {
@@ -322,9 +322,9 @@ check_probe_coverage <- function(dat0sesame) {
     stop("Data must contain a 'CGid' column")
   }
   
-  clock_file_path <- system.file("data", "Clock coefficients.RDS", package = "EnsembleAge")
+  clock_file_path <- system.file("data", "Clock_coefficients.RDS", package = "EnsembleAge")
   if (clock_file_path == "") {
-    clock_file_path <- file.path("data", "Clock coefficients.RDS")
+    clock_file_path <- file.path("data", "Clock_coefficients.RDS")
   }
   
   if (!file.exists(clock_file_path)) {
@@ -385,9 +385,9 @@ process_mammal320k_data <- function(mammal320Data, sample_sheet, species = "mous
   if (verbose) cat("=== Processing Mammal320k Data (Following Amin's Workflow) ===\n")
   
   # Step 1: Load geneMap320k (prioritize local file over package file)
-  annotation_file <- file.path("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS")
+  annotation_file <- file.path("data", "Mus_musculus_Mammalian_320k_mm10_Amin_V10.RDS")
   if (!file.exists(annotation_file)) {
-    annotation_file <- system.file("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS", 
+    annotation_file <- system.file("data", "Mus_musculus_Mammalian_320k_mm10_Amin_V10.RDS", 
                                    package = "EnsembleAge")
   }
   
@@ -400,9 +400,9 @@ process_mammal320k_data <- function(mammal320Data, sample_sheet, species = "mous
   
   # Step 2: Load mammalian array reference and median imputation data
   # Load mammalian array (40k reference) - prioritize local file
-  mammalian_file <- file.path("data", "Mus musculus. Mammalian 40k. mm10.Amin.V10.RDS")
+  mammalian_file <- file.path("data", "Mus_musculus_Mammalian_40k_mm10_Amin_V10.RDS")
   if (!file.exists(mammalian_file)) {
-    mammalian_file <- system.file("data", "Mus musculus. Mammalian 40k. mm10.Amin.V10.RDS", package = "EnsembleAge")
+    mammalian_file <- system.file("data", "Mus_musculus_Mammalian_40k_mm10_Amin_V10.RDS", package = "EnsembleAge")
   }
   
   if (!file.exists(mammalian_file)) {

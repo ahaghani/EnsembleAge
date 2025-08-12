@@ -13,9 +13,9 @@
 get_required_clock_probes <- function(verbose = TRUE) {
   
   # Load clock coefficients
-  clock_file_path <- system.file("data", "Clock coefficients.RDS", package = "EnsembleAge")
+  clock_file_path <- system.file("data", "Clock_coefficients.RDS", package = "EnsembleAge")
   if (clock_file_path == "") {
-    clock_file_path <- file.path("data", "Clock coefficients.RDS")
+    clock_file_path <- file.path("data", "Clock_coefficients.RDS")
   }
   
   if (!file.exists(clock_file_path)) {
