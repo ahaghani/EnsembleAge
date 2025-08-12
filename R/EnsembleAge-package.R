@@ -49,7 +49,7 @@
 #'   \item Report bugs at \url{https://github.com/ahaghani/EnsembleAge/issues}
 #' }
 #' 
-#' @author Amin Haghani \email{ahaghani@@altoslabs.com}
+#' @author Amin Haghani \email{ahaghani@@gmail.com}
 #' 
 #' @keywords package
 "_PACKAGE"

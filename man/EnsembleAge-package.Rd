@@ -55,6 +55,6 @@ Useful links:
 }
 }
 \author{
-Amin Haghani \email{ahaghani@altoslabs.com}
+Amin Haghani \email{ahaghani@gmail.com}
 }
 \keyword{package}
