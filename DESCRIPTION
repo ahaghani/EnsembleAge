@@ -13,7 +13,7 @@ Description: This package provides tools for predicting epigenetic age using
     in GeroScience (DOI: 10.1007/s11357-025-01808-1). The clocks are freely
     available for research use.
 License: MIT + file LICENSE
-URL: https://github.com/ahaghani/EnsembleAge, https://doi.org/10.1007/s11357-025-01808-1
+URL: https://github.com/ahaghani/EnsembleAge, https://doi.org/10.1007/s11357-025-01808-1, https://doi.org/10.5281/zenodo.16814673
 BugReports: https://github.com/ahaghani/EnsembleAge/issues
 biocViews: Software, Epigenetics, DNAMethylation, StatisticalMethod, Preprocessing
 Encoding: UTF-8
