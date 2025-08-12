@@ -324,7 +324,7 @@ str(your_methylation_data)
 head(your_sample_sheet)
 
 # Test with small subset first
-small_test <- predict(your_data[1:100, 1:3], your_samples[1:3, ])
+small_test <- predictEnsemble(your_data[1:100, 1:3], your_samples[1:3, ])
 ```
 
 ## 📈 Understanding Results
@@ -430,4 +430,4 @@ MIT License - Free for research and commercial use.
 
 ---
 
-**🎯 TL;DR: Just run `predict_all_clocks(your_data, your_samples)` - everything else is automatic!**
+**🎯 TL;DR: Just run `predictEnsemble(your_data, your_samples)` - everything else is automatic!**
