@@ -3,7 +3,7 @@ Type: Package
 Title: Epigenetic Age Prediction Using Ensemble Clock Methods
 Version: 0.99.0
 Authors@R: c(
-    person("Amin", "Haghani", email = "haghani_amin@yahoo.com", role = c("aut", "cre"))
+    person("Amin", "Haghani", email = "dr.a.haghani@gmail.com", role = c("aut", "cre"))
     )
 Description: This package provides tools for predicting epigenetic age using
     ensemble methods. It includes multiple clock types including Universal Clocks,
