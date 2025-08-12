@@ -349,7 +349,7 @@ small_test <- predictEnsemble(your_data[1:100, 1:3], your_samples[1:3, ])
 ## 👥 Author & Citation
 
 **Author:** Amin Haghani (Altos Labs)  
-**Email:** ahaghani@gmail.com
+**Email:** dr.a.haghani@gmail.com
 
 ### Citation
 
@@ -426,7 +426,7 @@ MIT License - Free for research and commercial use.
 
 - **Contributing**: Contributions are welcome! Please submit a Pull Request.
 - **Issues**: Report bugs or request features on our [GitHub issues page](https://github.com/ahaghani/EnsembleAge/issues).
-- **Questions**: Contact Amin Haghani at ahaghani@gmail.com
+- **Questions**: Contact Amin Haghani at dr.a.haghani@gmail.com
 
 ---
 
