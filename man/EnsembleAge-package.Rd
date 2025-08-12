@@ -53,7 +53,6 @@ Useful links:
   \item \doi{10.1007/s11357-025-01808-1}
   \item Report bugs at \url{https://github.com/ahaghani/EnsembleAge/issues}
 }
-
 }
 \author{
 Amin Haghani \email{ahaghani@altoslabs.com}
