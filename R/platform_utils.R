@@ -12,14 +12,58 @@
 #' platform <- detect_platform(methylation_data)
 #' }
 detect_platform <- function(dat0sesame) {
+  
+  # Handle both raw data matrices and processed data frames
+  if (is.matrix(dat0sesame)) {
+    # Raw matrix data - check dimensions and probe patterns
+    n_rows <- nrow(dat0sesame)
+    n_cols <- ncol(dat0sesame)
+    
+    # Check for mammal320k pattern (many probes as columns with _BC21 suffixes)
+    if (n_cols > 250000) {
+      col_suffix_pattern <- sum(grepl("_[A-Z]+[0-9]*$", colnames(dat0sesame)[1:min(1000, n_cols)]))
+      if (col_suffix_pattern > 100) {
+        return("Mammal320k")
+      }
+    }
+    
+    # Check for mammal320k pattern (many probes as rows with _BC21 suffixes)  
+    if (n_rows > 250000) {
+      row_suffix_pattern <- sum(grepl("_[A-Z]+[0-9]*$", rownames(dat0sesame)[1:min(1000, n_rows)]))
+      if (row_suffix_pattern > 100) {
+        return("Mammal320k")
+      }
+    }
+    
+    # For matrices, we can't proceed without CGid column
+    stop("Matrix data detected. Please convert to data.frame with CGid column or use preprocess_methylation_data() first.")
+  }
+  
   if (!"CGid" %in% names(dat0sesame)) {
-    stop("Data must contain a 'CGid' column with CpG identifiers")
+    # Check if first column might be probe IDs
+    first_col <- names(dat0sesame)[1]
+    probe_like <- sum(grepl("^cg[0-9]", dat0sesame[[first_col]][1:min(100, nrow(dat0sesame))]))
+    
+    if (probe_like > 50) {
+      warning("No 'CGid' column found, but first column appears to contain probe IDs. Consider renaming to 'CGid'.")
+      # Temporarily use first column for detection
+      probe_ids <- dat0sesame[[first_col]]
+    } else {
+      stop("Data must contain a 'CGid' column with CpG identifiers")
+    }
+  } else {
+    probe_ids <- dat0sesame$CGid
   }
   
   n_probes <- nrow(dat0sesame)
-  probe_ids <- dat0sesame$CGid
   
-  # Check for specific platform patterns
+  # Check for mammal320k suffix pattern first (priority check)
+  suffix_pattern <- sum(grepl("_[A-Z]+[0-9]*$", probe_ids[1:min(1000, length(probe_ids))]))
+  if (suffix_pattern > 100) {
+    return("Mammal320k")
+  }
+  
+  # Standard platform detection based on probe counts
   if (n_probes > 250000) {
     return("Mammal320k")
   } else if (n_probes > 30000 && n_probes < 50000) {
@@ -164,6 +208,8 @@ prepare_sample_sheet <- function(samps, verbose = TRUE) {
   }
   
   if (!"SpeciesLatinName" %in% names(samps)) {
+    # Try to detect species based on context - for now default to mouse
+    # Future enhancement: could detect based on data dimensions or other clues
     samps <- samps %>% mutate(SpeciesLatinName = "Mus musculus")
     missing_vars <- c(missing_vars, "SpeciesLatinName")
     defaults_applied <- c(defaults_applied, "SpeciesLatinName = 'Mus musculus'")
@@ -318,91 +364,247 @@ check_probe_coverage <- function(dat0sesame) {
   return(coverage_results[order(coverage_results$Coverage_Percent, decreasing = TRUE), ])
 }
 
-#' Map probe IDs to CpG IDs for Mammal320k data
+#' Process Mammal320k data with complete workflow
 #'
-#' This function maps Mammal320k probe IDs (with suffixes like _BC21) to standard CpG IDs
-#' using the annotation file.
+#' This function processes Mammal320k methylation data following the complete workflow:
+#' 1. Maps probe IDs to CpG IDs using revised annotation
+#' 2. Adds missing probes with median imputation 
+#' 3. Handles species-specific missing probe imputation
 #' 
-#' @param dat0sesame Data frame containing methylation data with probe IDs
+#' @param dat0sesame Data frame or matrix containing methylation data with probe IDs
+#' @param species Character string indicating species ("mouse", "rat", "human") for missing probe imputation (default: "mouse")
 #' @param verbose Logical indicating whether to print progress messages (default: TRUE)
-#' @return Data frame with CpG IDs mapped and duplicates handled
+#' @return Data frame with CpG IDs mapped, missing probes imputed, ready for clock predictions
 #' @export
 #' @examples
 #' \dontrun{
-#' mapped_data <- map_mammal320k_probes(methylation_data)
+#' processed_data <- process_mammal320k_data(methylation_data, species = "mouse")
 #' }
-map_mammal320k_probes <- function(dat0sesame, verbose = TRUE) {
+process_mammal320k_data <- function(mammal320Data, sample_sheet, species = "mouse", verbose = TRUE) {
   
-  # Load Mammal320k annotation
-  annotation_file <- system.file("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS", 
-                                 package = "EnsembleAge")
-  if (annotation_file == "") {
-    annotation_file <- file.path("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS")
+  if (verbose) cat("=== Processing Mammal320k Data (Following Amin's Workflow) ===\n")
+  
+  # Step 1: Load geneMap320k (prioritize local file over package file)
+  annotation_file <- file.path("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS")
+  if (!file.exists(annotation_file)) {
+    annotation_file <- system.file("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS", 
+                                   package = "EnsembleAge")
   }
   
   if (!file.exists(annotation_file)) {
-    warning("Mammal320k annotation file not found. Cannot map probe IDs.")
-    return(dat0sesame)
+    stop("Mammal320k annotation file not found: ", annotation_file)
   }
   
-  annotation <- readRDS(annotation_file)
+  geneMap320_local <- readRDS(annotation_file)
+  if (verbose) cat("Loaded geneMap320 with", nrow(geneMap320_local), "probes\n")
   
-  if (verbose) {
-    cat("Loaded Mammal320k annotation with", nrow(annotation), "probes\n")
+  # Step 2: Load mammalian array reference and median imputation data
+  # Load mammalian array (40k reference) - prioritize local file
+  mammalian_file <- file.path("data", "Mus musculus. Mammalian 40k. mm10.Amin.V10.RDS")
+  if (!file.exists(mammalian_file)) {
+    mammalian_file <- system.file("data", "Mus musculus. Mammalian 40k. mm10.Amin.V10.RDS", package = "EnsembleAge")
   }
   
-  # Check if CGid column exists, if not assume first column contains probe IDs
-  if ("CGid" %in% names(dat0sesame)) {
-    probe_col <- "CGid"
-  } else {
-    probe_col <- names(dat0sesame)[1]
-    if (verbose) cat("No CGid column found, using", probe_col, "as probe ID column\n")
+  if (!file.exists(mammalian_file)) {
+    stop("Mammalian 40k reference file not found: ", mammalian_file)
   }
   
-  # Get current probe IDs
-  current_probes <- dat0sesame[[probe_col]]
+  mammalianArray <- readRDS(mammalian_file)
+  if (verbose) cat("Loaded mammalianArray with", nrow(mammalianArray), "probes\n")
   
-  # Check if probes need mapping (have suffixes)
-  has_suffixes <- sum(grepl("_[A-Z]+[0-9]*$", current_probes))
-  
-  if (has_suffixes == 0) {
-    if (verbose) cat("Probe IDs appear to be clean CpG IDs already. No mapping needed.\n")
-    if (probe_col != "CGid") {
-      names(dat0sesame)[names(dat0sesame) == probe_col] <- "CGid"
+  # Load median imputation data based on species
+  if (species == "mouse") {
+    medians_file <- file.path("data", "gold_mouse_medians.csv")
+    if (!file.exists(medians_file)) {
+      medians_file <- system.file("data", "gold_mouse_medians.csv", package = "EnsembleAge")
     }
-    return(dat0sesame)
-  }
-  
-  if (verbose) {
-    cat("Found", has_suffixes, "probes with suffixes that need mapping\n")
-  }
-  
-  # Create mapping from annotation
-  probe_mapping <- annotation %>%
-    dplyr::select(Probe_ID, CGid) %>%
-    filter(!is.na(CGid) & !is.na(Probe_ID))
-  
-  # Map probe IDs to CpG IDs
-  dat_mapped <- dat0sesame %>%
-    dplyr::rename(Probe_ID = !!probe_col) %>%
-    left_join(probe_mapping, by = "Probe_ID") %>%
-    filter(!is.na(CGid)) %>%
-    dplyr::select(-Probe_ID)
-  
-  # Handle duplicates by taking the mean
-  if (any(duplicated(dat_mapped$CGid))) {
-    if (verbose) cat("Found duplicate CpG IDs after mapping. Taking mean values...\n")
     
-    sample_cols <- names(dat_mapped)[names(dat_mapped) != "CGid"]
-    dat_mapped <- dat_mapped %>%
-      group_by(CGid) %>%
-      dplyr::summarise(dplyr::across(dplyr::all_of(sample_cols), mean, na.rm = TRUE), .groups = "drop")
+    if (file.exists(medians_file)) {
+      medians <- read.csv(medians_file)
+      if (verbose) cat("Loaded mouse median imputation data\n")
+    } else {
+      warning("Mouse median file not found")
+      medians <- NULL
+    }
+    
+  } else if (species == "rat") {
+    medians_file <- file.path("data", "gold_Brownrat_medians.csv")
+    if (!file.exists(medians_file)) {
+      medians_file <- system.file("data", "gold_Brownrat_medians.csv", package = "EnsembleAge")
+    }
+    
+    if (file.exists(medians_file)) {
+      medianRat <- read.csv(medians_file)
+      if (verbose) cat("Loaded rat median imputation data\n")
+    } else {
+      warning("Rat median file not found")
+      medianRat <- NULL
+    }
+    
+  } else if (species == "human") {
+    medians_file <- file.path("data", "gold_human_medians.RDS")
+    if (!file.exists(medians_file)) {
+      medians_file <- system.file("data", "gold_human_medians.RDS", package = "EnsembleAge")
+    }
+    
+    if (file.exists(medians_file)) {
+      medianHuman <- readRDS(medians_file) %>% 
+        dplyr::select(CpG, human_median_pantissue) %>% 
+        setNames(c("CGid", "mouse_median"))
+      if (verbose) cat("Loaded human median imputation data\n")
+    } else {
+      warning("Human median file not found")
+      medianHuman <- NULL
+    }
+  } else {
+    warning("Unknown species: ", species, ". Using default 0.5 imputation")
+    medians <- NULL
+  }
+  
+  # Step 3: Following your exact workflow
+  normalized_betas_sesame2 <- mammal320Data
+  
+  if (verbose) cat("Original data dimensions:", dim(normalized_betas_sesame2), "\n")
+  
+  # Step 4: Your exact workflow - select geneMap320 probes, transpose, map
+  # Check data format and find probe IDs
+  if ("CGid" %in% names(normalized_betas_sesame2)) {
+    # Data already processed with CGid column
+    if (verbose) cat("Data already has CGid column, skipping processing...\n")
+    return(normalized_betas_sesame2)
+  } else if (nrow(normalized_betas_sesame2) > ncol(normalized_betas_sesame2)) {
+    # Data is probes x samples (already transposed)
+    probe_ids <- rownames(normalized_betas_sesame2)
+    if (verbose) cat("Data appears to be probes x samples format\n")
+  } else {
+    # Data is samples x probes (original format)
+    probe_ids <- colnames(normalized_betas_sesame2)
+    if (verbose) cat("Data appears to be samples x probes format\n")
+  }
+  
+  # First check which probes are available
+  available_probes <- intersect(geneMap320_local$Probe_ID, probe_ids)
+  
+  if (verbose) {
+    cat("Available probes from geneMap320:", length(available_probes), "out of", nrow(geneMap320_local), "\n")
+  }
+  
+  if (length(available_probes) == 0) {
+    stop("No matching probes found between geneMap320 and data")
+  }
+  
+  # Process data based on orientation
+  if (nrow(normalized_betas_sesame2) > ncol(normalized_betas_sesame2)) {
+    # Data is probes x samples (already transposed)
+    if (verbose) cat("Processing probes x samples data...\n")
+    dat <- as.data.frame(normalized_betas_sesame2)[available_probes, ] %>% 
+      tibble::rownames_to_column(var = "Probe_ID") %>% 
+      left_join(dplyr::select(.data = geneMap320_local, Probe_ID, CGid), by = "Probe_ID") %>% 
+      dplyr::select(-Probe_ID) %>% 
+      relocate(CGid, 1)
+  } else {
+    # Data is samples x probes (original format) - use your exact workflow
+    if (verbose) cat("Processing samples x probes data (original format)...\n")
+    dat <- as.data.frame(normalized_betas_sesame2) %>% 
+      dplyr::select(all_of(available_probes)) %>% 
+      t() %>% 
+      as.data.frame() %>% 
+      tibble::rownames_to_column(var = "Probe_ID") %>% 
+      left_join(dplyr::select(.data = geneMap320_local, Probe_ID, CGid), by = "Probe_ID") %>% 
+      dplyr::select(-Probe_ID) %>% 
+      relocate(CGid, 1)
   }
   
   if (verbose) {
-    cat("Mapping complete:", nrow(dat_mapped), "unique CpG IDs retained\n")
-    cat("Original probes:", nrow(dat0sesame), "-> Mapped CpGs:", nrow(dat_mapped), "\n")
+    cat("After probe mapping:", nrow(dat), "CpG sites\n")
+    cat("Sample columns:", ncol(dat) - 1, "\n")
   }
   
-  return(dat_mapped)
+  # Step 5: Add missing probes following Amin's exact code
+  if (verbose) cat("Creating missing probes using mammalianArray reference...\n")
+  
+  # Following Amin's exact code for missing probes
+  if (species == "mouse" && !is.null(medians)) {
+    missingProbes <- mammalianArray %>% 
+      filter(!CGid %in% geneMap320_local$CGid) %>% 
+      left_join(medians, by = c("CGid" = "CpG")) %>% 
+      filter(!is.na(mouse_median))
+    if (verbose) cat("Mouse missing probes:", nrow(missingProbes), "\n")
+  }
+  
+  if (species == "rat" && !is.null(medianRat)) {
+    missingProbesRat <- mammalianArray %>% 
+      filter(!CGid %in% geneMap320_local$CGid) %>% 
+      left_join(medianRat, by = c("CGid" = "CpG")) %>% 
+      filter(!is.na(mouse_median))
+    if (verbose) cat("Rat missing probes:", nrow(missingProbesRat), "\n")
+  }
+  
+  if (species == "human" && !is.null(medianHuman)) {
+    missingProbesHuman <- mammalianArray %>% 
+      filter(!CGid %in% geneMap320_local$CGid) %>% 
+      left_join(medianHuman, by = c("CGid" = "CGid")) %>% 
+      filter(!is.na(mouse_median))
+    if (verbose) cat("Human missing probes:", nrow(missingProbesHuman), "\n")
+  }
+  
+  # Check if we have missing probes to add
+  has_missing_probes <- FALSE
+  if (species == "mouse" && exists("missingProbes") && nrow(missingProbes) > 0) {
+    has_missing_probes <- TRUE
+  } else if (species == "rat" && exists("missingProbesRat") && nrow(missingProbesRat) > 0) {
+    has_missing_probes <- TRUE
+  } else if (species == "human" && exists("missingProbesHuman") && nrow(missingProbesHuman) > 0) {
+    has_missing_probes <- TRUE
+  }
+  
+  if (has_missing_probes) {
+    if (verbose) cat("Adding missing probes with median imputation...\n")
+    
+    # Following Amin's exact code for creating dat2
+    if (ncol(dat) > 1) {
+      dat2 <- rbindlist(lapply(2:ncol(dat), function(y) {
+        n <- names(dat)[y]
+        if (species == "rat" && exists("missingProbesRat")) {
+          a <- missingProbesRat %>% mutate(var = n)
+        } else if (species == "human" && exists("missingProbesHuman")) {
+          a <- missingProbesHuman %>% mutate(var = n)
+        } else if (exists("missingProbes")) {
+          a <- missingProbes %>% mutate(var = n)
+        } else {
+          # Fallback - create empty data frame with right structure
+          a <- data.frame(CGid = character(0), mouse_median = numeric(0), var = character(0))
+        }
+        return(a)
+      })) %>% 
+        spread(key = "var", value = "mouse_median") %>% 
+        dplyr::select(names(dat))
+      
+      dat <- bind_rows(dat, dat2)
+      if (verbose) cat("Final data after imputation:", nrow(dat), "CpG sites\n")
+    } else {
+      if (verbose) cat("Warning: No sample columns for imputation\n")
+    }
+  } else {
+    if (verbose) cat("No missing probes to add\n")
+  }
+  
+  # Step 6: Final transformation (following your exact code)
+  # dt <- dat %>% tibble::column_to_rownames("CGid") %>% dplyr::select(sample_sheet$idat_name) %>% as.matrix() %>% t() 
+  # dt[is.na(dt)] <- 0.5
+  
+  # For EnsembleAge compatibility, return as data.frame with CGid column
+  # Handle NAs
+  sample_cols <- names(dat)[names(dat) != "CGid"]
+  for (col in sample_cols) {
+    dat[[col]][is.na(dat[[col]])] <- 0.5
+  }
+  
+  if (verbose) {
+    cat("=== Mammal320k Processing Complete (Amin's Workflow) ===\n")
+    cat("Final dimensions:", dim(dat), "\n")
+    cat("Ready for clock predictions\n")
+  }
+  
+  return(dat)
 }

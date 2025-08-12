@@ -17,6 +17,7 @@
 #'
 #' \strong{Main Functions:}
 #' \itemize{
+#'   \item \code{\link{predictEnsemble}}: Ultimate one-liner - automatic detection and prediction
 #'   \item \code{\link{predict_all_clocks}}: All available clock predictions
 #'   \item \code{\link{predict_ensemble_static}}: Mouse-optimized ensemble clocks
 #'   \item \code{\link{predict_ensemble_dual_static}}: Human-optimized dual-species clocks
@@ -28,8 +29,8 @@
 #' \preformatted{
 #' library(EnsembleAge)
 #' 
-#' # Basic usage - works with any supported platform automatically!
-#' results <- predict_all_clocks(your_methylation_data, your_sample_sheet)
+#' # Ultimate one-liner - automatically detects platform and runs predictions
+#' results <- predictEnsemble("path/to/methylation_data.RDS", "path/to/sample_sheet.csv")
 #' 
 #' # View results
 #' head(results)

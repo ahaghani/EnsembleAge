@@ -87,62 +87,17 @@ efficiently_load_clock_data <- function(dat0sesame, samps, required_probes = NUL
   if (platform_check == "Mammal320k" || 
       sum(grepl("_[A-Z]+[0-9]*$", dat0sesame$CGid[1:min(100, nrow(dat0sesame))])) > 10) {
     
-    if (verbose) cat("Detected Mammal320k format. Following Amin's conversion approach...\n")
+    # Mammal320k processing is now handled in preprocess_methylation_data()
+    # Skip redundant processing here to avoid conflicts
+    if (verbose) cat("Mammal320k detected but processing already done in preprocessing step...\n")
     
-    # Load annotation (equivalent to geneMap320)
-    annotation_file <- system.file("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS", 
-                                   package = "EnsembleAge")
-    if (annotation_file == "") {
-      annotation_file <- file.path("data", "Mus musculus. Mammalian 320k. mm10.Amin.V10.RDS")
-    }
+    # Just filter to required probes (processing already done in preprocessing)
+    available_probes <- intersect(required_probes, dat0sesame$CGid)
+    dat0sesame <- dat0sesame %>%
+      dplyr::filter(CGid %in% available_probes)
     
-    if (file.exists(annotation_file)) {
-      geneMap320 <- readRDS(annotation_file) %>%
-        dplyr::filter(mammalianProbesToUse.rmCor0.7Plus.ResMouseLessThan0.25.Calibration0.8Plus == "yes")
-      
-      if (verbose) cat("Loaded annotation with", nrow(geneMap320), "valid probes\n")
-      
-      # Step 1: Filter data to only annotation probes (following line 199-201 in original code)
-      available_anno_probes <- intersect(geneMap320$Probe_ID, dat0sesame$CGid)
-      
-      if (verbose) {
-        cat("Found", length(available_anno_probes), "annotation probes out of", nrow(geneMap320), "in data\n")
-      }
-      
-      # Filter and map probe IDs to CpG IDs
-      dat_mapped <- dat0sesame %>%
-        dplyr::filter(CGid %in% available_anno_probes) %>%
-        dplyr::rename(Probe_ID = CGid) %>%
-        dplyr::left_join(dplyr::select(geneMap320, Probe_ID, CGid), by = "Probe_ID") %>%
-        dplyr::filter(!is.na(CGid)) %>%
-        dplyr::select(-Probe_ID)
-      
-      # Handle duplicates by taking the mean (following your approach)
-      if (any(duplicated(dat_mapped$CGid))) {
-        if (verbose) cat("Handling duplicate CpG IDs by taking mean...\n")
-        sample_cols <- names(dat_mapped)[names(dat_mapped) != "CGid"]
-        dat_mapped <- dat_mapped %>%
-          dplyr::group_by(CGid) %>%
-          dplyr::summarise(dplyr::across(dplyr::all_of(sample_cols), mean, na.rm = TRUE), .groups = "drop")
-      }
-      
-      # Now filter to only clock-required probes
-      available_clock_probes <- intersect(required_probes, dat_mapped$CGid)
-      dat_filtered <- dat_mapped %>%
-        dplyr::filter(CGid %in% available_clock_probes)
-      
-      if (verbose) {
-        cat("After annotation mapping and clock filtering: ", nrow(dat_filtered), "probes\n")
-      }
-      
-      dat0sesame <- dat_filtered
-      
-    } else {
-      if (verbose) cat("Mammal320k annotation not found. Using direct filtering...\n")
-      # Fallback: direct filtering to required probes
-      available_probes <- intersect(required_probes, dat0sesame$CGid)
-      dat0sesame <- dat0sesame %>%
-        dplyr::filter(CGid %in% available_probes)
+    if (verbose) {
+      cat("Filtered to", length(available_probes), "required probes out of", length(required_probes), "\n")
     }
   } else {
     # For other platforms (Mammal40k, Human), just filter to required probes

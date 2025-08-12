@@ -16,15 +16,24 @@ The clocks and methods implemented in this package are freely available for rese
 
 ## 🚀 Quick Start
 
+**The easiest way to predict epigenetic age:**
+
 ```r
 library(EnsembleAge)
 
-# Basic usage - works with any supported platform automatically!
-results <- predict_all_clocks(your_methylation_data, your_sample_sheet)
+# Ultimate one-liner - automatically detects platform and runs predictions
+results <- predictEnsemble("path/to/methylation_data.RDS", "path/to/sample_sheet.csv")
 
-# View results by clock family
+# View predictions
 head(results)
 ```
+
+**That's it!** EnsembleAge automatically:
+- ✅ Detects your platform (Human, Mammal40k, Mammal320k)
+- ✅ Preprocesses your data correctly  
+- ✅ Selects optimal clock methods
+- ✅ Handles missing probes with imputation
+- ✅ Generates comprehensive age predictions
 
 ## 📦 Installation
 
@@ -43,240 +52,299 @@ devtools::install_github("ahaghani/EnsembleAge")
 The package automatically installs these required R packages:
 - `dplyr`, `tibble`, `tidyr`, `plyr`, `stringr`, `data.table`
 
-## 🔧 Platform Support
+## 💡 Simple Examples
 
-EnsembleAge **automatically detects and handles** multiple methylation array platforms:
-
-### 🧬 Supported Platforms
-
-| Platform | Array Type | Probe Count | Auto-Detection | Status |
-|----------|------------|-------------|----------------|--------|
-| **Mammal320k** | Mammalian Methylation Array | ~320,000 | ✅ Automatic | ✅ Fully Supported |
-| **Mammal40k** | Reduced Mammalian Array | ~40,000 | ✅ Automatic | ✅ Fully Supported |
-| **Human EPIC** | Illumina EPIC Array | ~850,000 | ✅ Automatic | ✅ Fully Supported |
-| **Human 450k** | Illumina 450k Array | ~450,000 | ✅ Automatic | ✅ Fully Supported |
-
-### 🤖 What Happens Automatically
-
-**For Human Data (EPIC/450k):**
-1. ✅ Detects `Probe_ID` format and maps to `CGid` using EPIC annotation
-2. ✅ Handles large datasets efficiently (filters ~850k → ~30k relevant probes)
-3. ✅ Applies appropriate clocks: Universal, EnsembleDual (human-optimized)
-
-**For Mammal320k Data:**
-1. ✅ Detects probe suffix format (`cg123_BC21`) and maps to clean CpG IDs (`cg123`)
-2. ✅ Uses Mammalian 320k annotation for accurate mapping
-3. ✅ Handles duplicates by taking mean values
-
-**For Mammal40k Data:**
-1. ✅ Works directly with clean CpG IDs (`cg123456`)
-2. ✅ Applies all mouse clocks: Static, Dynamic, Universal
-
-**For All Platforms:**
-- 🔄 **Orientation Detection**: Automatically detects if probes are rows vs columns
-- 🧬 **Missing Probe Imputation**: Missing probes filled with 0.5 (neutral methylation)
-- ⚡ **Efficient Loading**: Only loads probes required for clock predictions
-- 📊 **Sample Matching**: Automatically matches samples between data and sample sheet
-
-## 📋 Data Requirements
-
-### Input Data Formats
-
-**Methylation Data:**
-- **Human**: Either `Probe_ID` (will auto-map) or `CGid` column
-- **Mouse/Mammal**: Either `CGid` or platform-specific probe IDs (will auto-convert)
-- **Values**: Beta values (0-1 range) for each sample
-
-**Sample Sheet (CSV):**
-- **Required**: `Basename` (sample names), `Age` (chronological age)
-- **Optional**: `Female` (0/1), `SpeciesLatinName`, `Tissue`
-- **Auto-filled**: Missing columns get sensible defaults with user notification
-
-### 📝 Sample Sheet Template
-
-Use our provided template:
-
-```r
-# Copy sample sheet template
-sample_template <- read.csv(system.file("extdata", "sample_sheet_template.csv", package = "EnsembleAge"))
-```
-
-| Basename | Age | Female | SpeciesLatinName | Tissue |
-|----------|-----|--------|------------------|--------|
-| Sample1 | 25 | 0 | Mus musculus | Liver |
-| Sample2 | 30 | 1 | Homo sapiens | Blood |
-
-## 🎯 Clock Types & Usage
-
-### 🔍 Specific Clock Predictions
-
-```r
-# Best for mouse data - main EnsembleAge clocks
-mouse_results <- predict_ensemble_static(methylation_data, sample_sheet)
-
-# Individual mouse clocks - 50 specialized clocks
-dynamic_results <- predict_ensemble_dynamic(methylation_data, sample_sheet)
-
-# Cross-species clocks (Universal + others)
-universal_results <- predict_original_clocks(methylation_data, sample_sheet)
-
-# Best for human data - dual-species optimized
-human_results <- predict_ensemble_dual_static(methylation_data, sample_sheet)
-
-# Everything - all available clocks
-all_results <- predict_all_clocks(methylation_data, sample_sheet)
-```
-
-### 📊 Clock Families Included
-
-| Clock Family | Best For | # Clocks | Description |
-|--------------|----------|----------|-------------|
-| **EnsembleAge.Static** | 🐭 Mouse (primary) | 2 | Main mouse ensemble clocks |
-| **EnsembleAge.Dynamic** | 🐭 Mouse (detailed) | 50 | Individual specialized mouse clocks |
-| **EnsembleDualAge.Static** | 👨 Human (primary) | 1 | Human-mouse optimized clock |
-| **UniClock2/3** | 🌐 Cross-species | 6 | Universal mammalian clocks |
-| **LifespanUberClock** | 🐭 Mouse variants | 12 | Lifespan-focused clocks |
-| **DNAmAge*** | 🐭 Mouse categories | 39 | Development, Elastic, Intervention clocks |
-
-## 💡 Usage Examples
-
-### Example 1: Human Data (Automatic)
+### Example 1: Mammal40k Data
 
 ```r
 library(EnsembleAge)
 
-# Load your human methylation data (with Probe_ID or CGid)
-# Package automatically detects format and maps appropriately
-results <- predict_ensemble_dual_static(human_betas, human_samples)
+# Create simulated mammal40k methylation data
+set.seed(123)
+n_probes <- 1000  # Using subset for example
+n_samples <- 10
 
-# View human-optimized age predictions
+# Methylation data: probes as rows, samples as columns, with CGid
+methylation_data <- data.frame(
+  CGid = paste0("cg", sprintf("%08d", 1:n_probes)),
+  matrix(runif(n_probes * n_samples, 0.1, 0.9), nrow = n_probes)
+)
+names(methylation_data)[-1] <- paste0("Sample_", 1:n_samples)
+
+# Sample sheet: required columns
+sample_sheet <- data.frame(
+  Basename = paste0("Sample_", 1:n_samples),
+  Age = c(0.5, 1.2, 2.1, 0.8, 1.5, 2.8, 1.1, 0.9, 2.2, 1.7),  # Mouse ages in years
+  Female = c(1, 0, 1, 1, 0, 1, 0, 1, 0, 1),  # 1=female, 0=male
+  Tissue = "Blood",
+  SpeciesLatinName = "Mus musculus"
+)
+
+# Run predictions
+results <- predictEnsemble(methylation_data, sample_sheet)
+
+# View results
 head(results)
-#   Basename Age epiClock                    epiAge AgeAccelation Female Tissue
-# 1 Sample1   75 panTissue                  68.2      -6.8          0   Blood
-# 2 Sample2   75 panTissue                  73.1      -1.9          1   Blood
+#   Basename  Age epiClock   epiAge AgeAcceleration Female Tissue clockFamily
+# 1 Sample_1  0.5   Static     0.8            0.12      1  Blood   Ensemble.Static
+# 2 Sample_1  0.5 Dynamic1     0.7            0.05      1  Blood   EnsembleAge.Dynamic
+# ...
 ```
 
-### Example 2: Mouse Data (Automatic)
+### Example 2: Mammal320k Data (with file paths)
 
 ```r
-# Load your mouse methylation data
-# Package detects Mammal320k/40k format automatically
-mouse_results <- predict_ensemble_static(mouse_betas, mouse_samples)
+# For mammal320k array data stored in files:
+results <- predictEnsemble("mammal320k_data.RDS", "mouse_samples.csv")
 
-# Check what platform was detected
-cat("Platform detected:", attr(mouse_results, "platform"))
-
-# View main mouse age predictions
-head(mouse_results[c("Basename", "Age", "epiAge", "AgeAccelation")])
+# View results in wide format (traditional output)
+results_wide <- predictEnsemble("mammal320k_data.RDS", "mouse_samples.csv", 
+                                output_format = "wide")
+head(results_wide)
+#   Basename  Age  Ensemble.Static.clock.epiAge  EnsembleAge.Dynamic.X1.clock.epiAge
+# 1 Mouse_01  1.2                          1.45                                  1.38
 ```
 
-### Example 3: All Clocks with Platform Info
+### Example 3: Human Data (with file paths)
 
 ```r
-# Run all available clocks
-all_results <- predict_all_clocks(methylation_data, sample_sheet, verbose = TRUE)
+# For human EPIC array data stored in files:
+results <- predictEnsemble("human_methylation.RData", "human_samples.csv")
 
-# See what clocks worked for your data
-family_summary <- all_results %>%
-  group_by(clockFamily) %>%
-  summarise(
-    n_clocks = length(unique(epiClock)),
-    n_predictions = n(),
-    mean_age = round(mean(epiAge, na.rm = TRUE), 1)
-  )
+# Get both long and wide format results
+results_both <- predictEnsemble("human_methylation.RData", "human_samples.csv", 
+                                output_format = "both")
 
-print(family_summary)
+long_format <- results_both$long    # One row per sample-clock combination
+wide_format <- results_both$wide    # One row per sample, clocks as columns
 ```
 
-### Example 4: Check Platform Compatibility
+### Example 4: Auto-generate Sample Sheet
 
 ```r
-# Check your data before running predictions
-platform <- detect_platform(your_data)
-cat("Detected platform:", platform)
+# If you don't have a sample sheet, let EnsembleAge create a template
+results <- predictEnsemble(methylation_data, samples = NULL)
 
-# Check probe coverage for different clocks
-coverage <- check_probe_coverage(your_data)
-print(coverage[coverage$Coverage_Percent > 70, ])  # Well-covered clocks
-
-# Validate your sample sheet
-processed_samples <- prepare_sample_sheet(your_samples)
+# This creates 'user_data_sample_sheet_template.csv' 
+# Fill it out with your actual sample information and rerun
 ```
 
-## 🔧 Advanced Options
+## 📊 Data Structure Guide
 
-### Custom Preprocessing
-
+### Methylation Data Format
 ```r
-# Manual control over preprocessing
-processed <- preprocess_methylation_data(
-  dat0sesame = your_data,
-  samps = your_samples,
-  min_coverage = 0.8,           # Coverage threshold
-  handle_missing = "impute",    # Missing value strategy
-  verbose = TRUE
-)
-
-# Run predictions on preprocessed data
-results <- predictAgeAndAgeAcc(processed$data, processed$samples)
+# Required format: probes as rows, samples as columns
+#        CGid   Sample_1  Sample_2  Sample_3
+# 1  cg00001     0.234     0.567     0.123
+# 2  cg00002     0.789     0.345     0.678
+# 3  cg00003     0.456     0.234     0.567
 ```
 
-### Efficient Loading for Large Datasets
-
+### Sample Sheet Format
 ```r
-# Recommended for large datasets (like EPIC arrays)
-results <- predict_all_clocks(
-  your_data, 
-  your_samples,
-  efficient_loading = TRUE,  # Only loads required probes
-  verbose = TRUE
-)
+# Required columns: Basename, Age
+# Optional columns: Female, Tissue, SpeciesLatinName
+#   Basename   Age  Female    Tissue  SpeciesLatinName
+# 1 Sample_1   1.2       1     Blood      Mus musculus
+# 2 Sample_2   2.1       0     Liver      Mus musculus  
+# 3 Sample_3   0.8       1    Kidney      Mus musculus
 ```
-
-## 📈 Understanding Results
 
 ### Output Format
+```r
+# Long format (default): one row per sample-clock combination
+#   Basename  Age epiClock  epiAge AgeAcceleration  clockFamily
+# 1 Sample_1  1.2   Static    1.45           0.25  Ensemble.Static
+# 2 Sample_1  1.2 Dynamic1    1.38           0.18  EnsembleAge.Dynamic
 
-All prediction functions return a data frame with:
+# Wide format: one row per sample, clocks as columns  
+#   Basename  Age  Ensemble.Static.clock.epiAge  EnsembleAge.Dynamic.X1.clock.epiAge
+# 1 Sample_1  1.2                           1.45                                  1.38
+```
 
-- **Basename**: Sample identifier
-- **Age**: Input chronological age  
-- **epiClock**: Clock name (e.g., "panTissue", "Blood", "Liver")
-- **epiAge**: Predicted epigenetic age
-- **AgeAccelation**: Age acceleration (epiAge - chronological age, residualized)
-- **Female**: Sex (0=Male, 1=Female, NA=Unknown)
-- **Tissue**: Tissue type
-- **clockFamily**: Clock family name
+## 🔧 Supported Platforms
 
-### Choosing the Right Clocks
+EnsembleAge **automatically detects and handles** multiple methylation array platforms:
 
-**For Human Samples:**
-- 🥇 **Primary**: `predict_ensemble_dual_static()` - Best human accuracy
-- 🥈 **Secondary**: `predict_original_clocks()` - Universal clocks
+| Platform | Probe Count | File Types | Auto-Detection | File Path Support |
+|----------|-------------|------------|----------------|-------------------|
+| **Human EPIC/450k** | ~850k/450k | `.RData`, `.RDS`, `.csv`, `.txt` | ✅ Automatic | ✅ Yes |
+| **Mammal320k** | ~320k | `.RData`, `.RDS`, `.csv`, `.txt` | ✅ Automatic | ✅ Yes |
+| **Mammal40k** | ~40k | `.RData`, `.RDS`, `.csv`, `.txt` | ✅ Automatic | ✅ Yes |
 
-**For Mouse Samples:**
-- 🥇 **Primary**: `predict_ensemble_static()` - Main mouse clocks  
-- 🥈 **Detailed**: `predict_ensemble_dynamic()` - 50 specialized clocks
-- 🥉 **Universal**: `predict_original_clocks()` - Cross-species clocks
+**File Path Support**: All platforms work with both file paths (`"data.RDS"`) and pre-loaded R objects (`my_data_frame`).
 
-**For All Data:**
-- 📊 **Comprehensive**: `predict_all_clocks()` - Everything available
+### ⚡ What Happens Automatically
+
+- 🔍 **Platform Detection**: Identifies your array type from data dimensions and patterns
+- 🔄 **Data Orientation**: Detects if probes are rows or columns and fixes automatically  
+- 🧬 **Missing Probe Handling**: Imputes missing CpG sites with neutral values (0.5)
+- 📊 **Smart Method Selection**: Chooses best clock methods based on data coverage
+- 💾 **Multiple Output Formats**: Long format (analysis-ready) or wide format (traditional)
+
+## 📋 Data Requirements
+
+### Methylation Data
+- **Format**: Data frame or matrix with CpG sites and sample methylation values
+- **Values**: Beta values (0-1 range) representing methylation levels
+- **Orientation**: Probes as rows OR columns (auto-detected and fixed)
+- **File Types**: `.RDS`, `.RData`, `.csv` supported
+
+### Sample Sheet
+- **Required**: `Basename` (sample IDs), `Age` (chronological age in years)
+- **Optional**: `Female` (1=female, 0=male), `Tissue`, `SpeciesLatinName`
+- **Format**: CSV file or R data frame
+
+### 🎯 Quick Tips
+- **Ages**: Use years (e.g., 1.5 for 18-month-old mouse, 25.3 for human)
+- **Missing data**: Package handles missing probes automatically
+- **No sample sheet?** Use `samples = NULL` to auto-generate a template
+- **File paths**: Use full paths or ensure files are in working directory
+
+## 🎯 Advanced Usage
+
+### Multiple Output Formats
+
+```r
+# Get long format (default) - best for analysis
+results_long <- predictEnsemble(methylation_data, sample_sheet, output_format = "long")
+
+# Get wide format - one row per sample
+results_wide <- predictEnsemble(methylation_data, sample_sheet, output_format = "wide") 
+
+# Get both formats
+results_both <- predictEnsemble(methylation_data, sample_sheet, output_format = "both")
+```
+
+### Method Selection
+
+```r
+# Automatic method selection (recommended)
+results <- predictEnsemble(methylation_data, sample_sheet)  # Auto-selects best methods
+
+# Available methods: "ensemble_static", "ensemble_dynamic", "ensemble_dual", "all"
+```
+
+### Working with Files vs Objects
+
+```r
+# Using file paths (works for ALL platforms: Human, Mammal320k, Mammal40k)
+results <- predictEnsemble("methylation.RDS", "samples.csv")           # RDS files
+results <- predictEnsemble("data.RData", "samples.csv")                # RData files (all platforms)
+results <- predictEnsemble("mammal320k_data.RData", "mouse_samples.csv") # Mammal320k RData
+results <- predictEnsemble("mammal40k_data.RData", "mouse_samples.csv")  # Mammal40k RData
+
+# Using R objects directly  
+results <- predictEnsemble(my_methylation_df, my_sample_df)
+
+# Mixed approach (file + object, or object + file)
+results <- predictEnsemble("methylation.RDS", my_sample_df)           # File + object
+results <- predictEnsemble(my_methylation_df, "samples.csv")          # Object + file
+```
+
+### 💾 Result Saving Control
+
+EnsembleAge gives you full control over where and how your results are saved:
+
+```r
+# Default: saves to current directory with automatic naming
+results <- predictEnsemble("data.RDS", "samples.csv")
+# Creates: EnsembleAge_data_long_20250811_143052.csv
+
+# Custom directory
+results <- predictEnsemble("data.RDS", "samples.csv", 
+                          output_dir = "results/2024/study1/")
+
+# Custom prefix instead of "EnsembleAge"
+results <- predictEnsemble("data.RDS", "samples.csv", 
+                          output_prefix = "MouseStudy")
+# Creates: MouseStudy_data_long_20250811_143052.csv
+
+# Completely custom filename
+results <- predictEnsemble("data.RDS", "samples.csv", 
+                          output_filename = "my_final_results.csv")
+
+# Turn off saving entirely (just return results)
+results <- predictEnsemble("data.RDS", "samples.csv", 
+                          save_results = FALSE)
+
+# Both formats with custom naming
+results <- predictEnsemble("data.RDS", "samples.csv", 
+                          output_format = "both",
+                          output_dir = "final_results/",
+                          output_prefix = "Project_Alpha")
+# Creates: Project_Alpha_data_long_20250811_143052.csv
+#          Project_Alpha_data_wide_20250811_143052.csv
+```
+
+**Automatic Features:**
+- ✅ **Directory Creation**: Output directories are created automatically if they don't exist
+- ✅ **Timestamp**: Automatic timestamps prevent file overwrites  
+- ✅ **Smart Naming**: Custom filenames work with "both" format (adds `_long` and `_wide`)
+- ✅ **File Size**: Shows saved file size for easy reference
+
+### 📊 Clock Families Included
+
+| Clock Family | Best For | # Clocks | Description | Reference |
+|--------------|----------|----------|-------------|-----------|
+| **EnsembleAge.Static** | 🐭 Mouse (primary) | 2 | Main mouse ensemble clocks | [GeroScience 2025](https://doi.org/10.1007/s11357-025-01808-1) |
+| **EnsembleAge.Dynamic** | 🐭 Mouse (detailed) | 50 | Individual specialized mouse clocks | [GeroScience 2025](https://doi.org/10.1007/s11357-025-01808-1) |
+| **EnsembleDualAge.Static** | 👨 Human (primary) | 1 | Human-mouse optimized clock | [GeroScience 2025](https://doi.org/10.1007/s11357-025-01808-1) |
+| **UniClock2/3** | 🌐 Cross-species | 6 | Universal mammalian clocks | [Nature Aging 2023](https://doi.org/10.1038/s43587-023-00462-6) |
+| **LifespanUberClock** | 🐭 Mouse variants | 12 | Lifespan-focused clocks | [bioRxiv 2022](https://doi.org/10.1101/2022.01.16.476530) |
+| **DNAmAge*** | 🐭 Mouse categories | 39 | Development, Elastic, Intervention clocks | [eLife 2022](https://doi.org/10.7554/eLife.75244) |
+
+**Total: 110+ individual clocks** covering development, aging, interventions, and cross-species predictions.
 
 ## 🛠️ Troubleshooting
 
 ### Common Issues
 
-**"Cannot identify CpG ID column"**
-- Solution: Ensure your data has either `CGid` or `Probe_ID` column
+**"Cannot determine data orientation"**
+- Ensure your data has a `CGid` column or CpG IDs as row names
+- For human data, make sure methylation values are present (not just annotations)
 
-**"No matching samples found"**
-- Solution: Check that sample names in data match `Basename` in sample sheet
+**"No matching samples found"**  
+- Check that `Basename` column in sample sheet matches column names in methylation data
+- Use `head(colnames(methylation_data))` and `head(sample_sheet$Basename)` to compare
 
 **"Low probe coverage warnings"**
-- Solution: This is normal; package automatically handles missing probes
+- Normal for human data (relies on imputation)
+- For mouse data, ensure you're using the correct platform (Mammal40k vs Mammal320k)
 
-**Platform detected incorrectly**
-- Solution: Contact us with details; detection is usually accurate
+### Getting Help
+
+```r
+# Check what platform was detected
+platform <- detect_platform(your_data)
+cat("Detected platform:", platform)
+
+# Examine your data structure  
+str(your_methylation_data)
+head(your_sample_sheet)
+
+# Test with small subset first
+small_test <- predict(your_data[1:100, 1:3], your_samples[1:3, ])
+```
+
+## 📈 Understanding Results
+
+### Output Columns
+
+- **Basename**: Sample identifier  
+- **Age**: Input chronological age
+- **epiClock**: Clock name used for prediction
+- **epiAge**: Predicted epigenetic age
+- **AgeAcceleration**: Age acceleration (residualized difference)
+- **Female**: Sex (1=female, 0=male, NA=unknown)
+- **Tissue**: Tissue type
+- **clockFamily**: Clock family group
+
+### Interpreting Results
+
+- **epiAge**: The biological/epigenetic age predicted by the clock
+- **AgeAcceleration**: Positive = aging faster, Negative = aging slower
+- **Multiple clocks**: Each row represents one clock prediction per sample
 
 ## 👥 Author & Citation
 
@@ -287,20 +355,66 @@ All prediction functions return a data frame with:
 
 If you use this package in your research, please cite:
 
+**EnsembleAge Package:**
 ```
 Haghani, A., et al. (2025). EnsembleAge: enhancing epigenetic age assessment with a multi‑clock framework. GeroScience.
 DOI: 10.1007/s11357-025-01808-1
+```
+
+**Universal Clocks:**
+```
+Lu, A.T., Fei, Z., Haghani, A. et al. (2023). Universal DNA methylation age across mammalian tissues. 
+Nature Aging 3, 1144–1166. DOI: 10.1038/s43587-023-00462-6
+```
+
+**Original Mammalian Clocks:**
+```
+Haghani, A., et al. (2022). Methylation-based epigenetic clocks for mammalian species. eLife 11:e75244.
+DOI: 10.7554/eLife.75244
+```
+
+**Lifespan Uber Clock:**
+```
+Lu, A.T., et al. (2022). Universal methylation clocks enable analysis of aging effects in mammals.
+bioRxiv. DOI: 10.1101/2022.01.16.476530
 ```
 
 **BibTeX:**
 ```bibtex
 @article{haghani2025ensembleage,
   title={EnsembleAge: enhancing epigenetic age assessment with a multi‑clock framework},
-  author={Haghani, Amin and [other authors]},
+  author={Haghani, Amin and others},
   journal={GeroScience},
   year={2025},
-  doi={10.1007/s11357-025-01808-1},
-  url={https://doi.org/10.1007/s11357-025-01808-1}
+  doi={10.1007/s11357-025-01808-1}
+}
+
+@article{lu2023universal,
+  title={Universal DNA methylation age across mammalian tissues},
+  author={Lu, Ake T and Fei, Zhe and Haghani, Amin and others},
+  journal={Nature Aging},
+  volume={3},
+  pages={1144--1166},
+  year={2023},
+  doi={10.1038/s43587-023-00462-6}
+}
+
+@article{haghani2022methylation,
+  title={Methylation-based epigenetic clocks for mammalian species},
+  author={Haghani, Amin and others},
+  journal={eLife},
+  volume={11},
+  pages={e75244},
+  year={2022},
+  doi={10.7554/eLife.75244}
+}
+
+@article{lu2022lifespan,
+  title={Universal methylation clocks enable analysis of aging effects in mammals},
+  author={Lu, Ake T and others},
+  journal={bioRxiv},
+  year={2022},
+  doi={10.1101/2022.01.16.476530}
 }
 ```
 

@@ -77,8 +77,17 @@ detect_and_fix_orientation <- function(dat0sesame, samps = NULL, verbose = TRUE)
           if (verbose) cat("First column appears to contain CpG IDs...\n")
           names(dat0sesame)[1] <- "CGid"
         } else {
-          # Might need to transpose
-          if (nrow(dat0sesame) < ncol(dat0sesame) && ncol(dat0sesame) > 10000) {
+          # Check for human data pattern: many rows (>100k), few columns
+          if (nrow(dat0sesame) > 100000 && ncol(dat0sesame) < 1000) {
+            if (verbose) cat("Detected likely human array data (", nrow(dat0sesame), " probes). Creating CGid column from row indices...\n")
+            # For human data without proper CpG IDs, create generic IDs
+            # This will require probe imputation later, but allows processing to continue
+            dat0sesame <- dat0sesame %>% 
+              tibble::rownames_to_column("CGid") %>%
+              mutate(CGid = ifelse(grepl("^probe_", CGid), CGid, paste0("probe_", CGid)))
+            if (verbose) cat("Note: Using generic probe IDs. Most clocks will rely on imputation.\n")
+            
+          } else if (nrow(dat0sesame) < ncol(dat0sesame) && ncol(dat0sesame) > 10000) {
             if (verbose) cat("Data appears to be transposed (more columns than rows). Transposing...\n")
             dat0sesame <- dat0sesame %>%
               tibble::rownames_to_column("temp_id") %>%

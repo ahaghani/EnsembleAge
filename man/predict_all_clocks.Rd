@@ -22,6 +22,10 @@ Data frame with age predictions and acceleration values for all clocks
 Predict age using all available clocks (ensemble and original).
 This is equivalent to the main predict_age_simple function but with clearer naming.
 }
+\details{
+For the simplest interface, consider using \code{\link{predictEnsemble}} which
+automatically handles data loading, platform detection, and preprocessing.
+}
 \examples{
 \dontrun{
 # All available clock predictions

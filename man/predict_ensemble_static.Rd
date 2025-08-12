@@ -27,6 +27,10 @@ Data frame with age predictions and acceleration values for static ensemble cloc
 Predict age using the main EnsembleAge static clocks for mouse data.
 This is the primary clock for mouse age predictions.
 }
+\details{
+For the simplest interface, consider using \code{\link{predictEnsemble}} which
+automatically handles data loading, platform detection, and preprocessing.
+}
 \examples{
 \donttest{
 # Main mouse age prediction

@@ -3,6 +3,9 @@
 #' Predict age using the main EnsembleAge static clocks for mouse data.
 #' This is the primary clock for mouse age predictions.
 #' 
+#' For the simplest interface, consider using \code{\link{predictEnsemble}} which
+#' automatically handles data loading, platform detection, and preprocessing.
+#' 
 #' @param dat0sesame Data frame containing methylation data with CGid column
 #' @param samps Data frame containing sample information (must include Age column)
 #' @param efficient_loading Logical indicating whether to use efficient loading (default: TRUE)
@@ -184,6 +187,9 @@ predict_original_clocks <- function(dat0sesame, samps, efficient_loading = TRUE,
 #'
 #' Predict age using all available clocks (ensemble and original).
 #' This is equivalent to the main predict_age_simple function but with clearer naming.
+#' 
+#' For the simplest interface, consider using \code{\link{predictEnsemble}} which
+#' automatically handles data loading, platform detection, and preprocessing.
 #' 
 #' @param dat0sesame Data frame containing methylation data with CGid column
 #' @param samps Data frame containing sample information (must include Age column)

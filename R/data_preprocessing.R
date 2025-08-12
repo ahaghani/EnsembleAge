@@ -29,13 +29,54 @@ preprocess_methylation_data <- function(dat0sesame, samps, min_coverage = 0.8,
   orientation_result <- detect_and_fix_orientation(dat0sesame, samps, verbose = verbose)
   dat0sesame <- orientation_result$data
   
-  # Check if this is Mammal320k data that needs probe mapping
-  if (verbose) cat("Checking for probe mapping requirements...\n")
-  platform_check <- detect_platform(dat0sesame)
-  if (platform_check == "Mammal320k" || 
-      sum(grepl("_[A-Z]+[0-9]*$", dat0sesame$CGid[1:min(100, nrow(dat0sesame))])) > 10) {
-    if (verbose) cat("Detected Mammal320k format. Mapping probe IDs to CpG IDs...\n")
-    dat0sesame <- map_mammal320k_probes(dat0sesame, verbose = verbose)
+  # Check if this is Mammal320k data that needs complete processing
+  if (verbose) cat("Checking for platform-specific processing requirements...\n")
+  
+  # First detect platform - handle matrices and data frames differently
+  if (is.matrix(dat0sesame)) {
+    # For matrices, check dimensions and patterns
+    n_rows <- nrow(dat0sesame)
+    n_cols <- ncol(dat0sesame)
+    
+    if (n_cols > 250000) {
+      col_suffix_pattern <- sum(grepl("_[A-Z]+[0-9]*$", colnames(dat0sesame)[1:min(1000, n_cols)]))
+      if (col_suffix_pattern > 100) {
+        platform_check <- "Mammal320k"
+      } else {
+        platform_check <- "Unknown"
+      }
+    } else if (n_rows > 250000) {
+      row_suffix_pattern <- sum(grepl("_[A-Z]+[0-9]*$", rownames(dat0sesame)[1:min(1000, n_rows)]))
+      if (row_suffix_pattern > 100) {
+        platform_check <- "Mammal320k"
+      } else {
+        platform_check <- "Unknown"
+      }
+    } else {
+      platform_check <- "Unknown"
+    }
+  } else {
+    # For data frames, use standard detection
+    tryCatch({
+      platform_check <- detect_platform(dat0sesame)
+    }, error = function(e) {
+      # If standard detection fails, check for mammal320k patterns
+      if ("CGid" %in% names(dat0sesame)) {
+        suffix_pattern <- sum(grepl("_[A-Z]+[0-9]*$", dat0sesame$CGid[1:min(100, nrow(dat0sesame))]))
+        platform_check <- if (suffix_pattern > 10) "Mammal320k" else "Unknown"
+      } else {
+        platform_check <- "Unknown"
+      }
+    })
+  }
+  
+  if (platform_check == "Mammal320k") {
+    if (verbose) cat("Detected Mammal320k format. Using complete processing workflow...\n")
+    
+    # Use the complete mammal320k processing workflow following Amin's exact steps
+    # Default to mouse species unless specified otherwise
+    species <- "mouse"  # Could be made a parameter in future
+    dat0sesame <- process_mammal320k_data(dat0sesame, samps, species = species, verbose = verbose)
   }
   
   # Validate input data after orientation fix
@@ -103,13 +144,17 @@ preprocess_methylation_data <- function(dat0sesame, samps, min_coverage = 0.8,
     
   } else if (handle_missing == "impute") {
     # Simple mean imputation for missing values
-    for (i in 2:ncol(dat_filtered)) {
-      missing_idx <- is.na(dat_filtered[, i])
-      if (any(missing_idx)) {
-        dat_filtered[missing_idx, i] <- mean(dat_filtered[, i], na.rm = TRUE)
+    if (ncol(dat_filtered) > 1) {
+      for (i in 2:ncol(dat_filtered)) {
+        missing_idx <- is.na(dat_filtered[, i])
+        if (any(missing_idx)) {
+          dat_filtered[missing_idx, i] <- mean(dat_filtered[, i], na.rm = TRUE)
+        }
       }
+      if (verbose) cat("Imputed missing values with column means\n")
+    } else {
+      if (verbose) cat("No sample columns found for imputation\n")
     }
-    if (verbose) cat("Imputed missing values with column means\n")
     
   } else if (handle_missing == "keep") {
     if (verbose) cat("Keeping missing values as is\n")
