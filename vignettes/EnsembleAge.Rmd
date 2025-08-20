@@ -41,6 +41,8 @@ EnsembleAge addresses several key limitations in existing epigenetic age predict
 
 4. **Automated Preprocessing**: The package handles data orientation detection, probe mapping, and missing value imputation automatically.
 
+5. **Bioconductor Integration**: EnsembleAge works seamlessly with standard Bioconductor data structures and workflows, accepting preprocessed methylation data from packages like `sesame` and `minfi`.
+
 ## Installation
 
 ```{r install, eval=FALSE}
@@ -203,6 +205,109 @@ template <- create_sample_sheet_template(
 )
 
 print(template)
+```
+
+## Bioconductor Integration
+
+EnsembleAge is designed to work seamlessly with the Bioconductor ecosystem, particularly with methylation data preprocessed by packages like `sesame` and `minfi`.
+
+### Working with SummarizedExperiment Objects
+
+```{r se_demo}
+# Load SummarizedExperiment (standard Bioconductor class)
+library(SummarizedExperiment)
+
+# Create a SummarizedExperiment object (as commonly produced by sesame/minfi)
+n_probes <- 200
+n_samples <- 4
+
+# Simulate beta values matrix
+beta_values <- matrix(rbeta(n_probes * n_samples, 2, 2), 
+                     nrow = n_probes, ncol = n_samples)
+rownames(beta_values) <- paste0("cg", sprintf("%08d", sample(1:100000, n_probes)))
+colnames(beta_values) <- paste0("Sample_", 1:n_samples)
+
+# Create sample metadata (colData)
+sample_metadata <- data.frame(
+  Basename = paste0("Sample_", 1:n_samples),
+  Age = c(0.8, 1.5, 2.2, 1.1),
+  Female = c(1, 0, 1, 0),
+  Tissue = "Blood",
+  SpeciesLatinName = "Mus musculus"
+)
+
+# Create SummarizedExperiment object
+se <- SummarizedExperiment(
+  assays = list(beta = beta_values),
+  colData = sample_metadata
+)
+
+# Display object structure
+se
+```
+
+```{r se_prediction}
+# Predict ages directly from SummarizedExperiment
+se_results <- predict_age_from_se(se, verbose = FALSE)
+
+# Display results
+head(se_results)
+```
+
+### Integration with Bioconductor Workflows
+
+```{r bioc_workflow}
+# Extract methylation data from various Bioconductor objects
+methylation_df <- extract_methylation_data(se, assay_name = "beta")
+
+# This works with matrices too (common output from minfi)
+matrix_data <- SummarizedExperiment::assay(se, "beta")
+methylation_df2 <- extract_methylation_data(matrix_data)
+
+# Both approaches yield the same result
+identical(methylation_df, methylation_df2)
+```
+
+```{r convert_back}
+# Convert results back to SummarizedExperiment for downstream analysis
+se_results_converted <- results_to_se(se_results)
+
+# Display the structure
+se_results_converted
+
+# Access predicted ages as assay data
+predicted_ages <- SummarizedExperiment::assay(se_results_converted, "predicted_ages")
+head(predicted_ages)
+```
+
+### Typical Bioconductor Workflow Integration
+
+EnsembleAge fits naturally into standard Bioconductor methylation analysis workflows:
+
+1. **Data Import**: Use `sesame` or `minfi` to import and preprocess IDAT files
+2. **Quality Control**: Apply standard QC measures  
+3. **Normalization**: Generate beta values using established methods
+4. **Age Prediction**: Apply EnsembleAge to the preprocessed data
+5. **Downstream Analysis**: Use predicted ages in SummarizedExperiment objects for further analysis
+
+```{r workflow_example, eval=FALSE}
+# Typical workflow (pseudocode)
+# library(sesame)
+# library(minfi)
+
+# Step 1: Import data
+# se_raw <- sesame::readIDATpair("path/to/idat/files")
+
+# Step 2: Preprocess and get beta values  
+# se_processed <- sesame::qualityMask(se_raw) %>%
+#                  sesame::noobCorrection() %>%
+#                  sesame::getBetas()
+
+# Step 3: Predict ages with EnsembleAge
+# age_results <- predict_age_from_se(se_processed)
+
+# Step 4: Continue with downstream analysis
+# se_final <- results_to_se(age_results, se_processed)
 ```
 
 ## Understanding Results
