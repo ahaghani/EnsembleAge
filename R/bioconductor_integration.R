@@ -150,8 +150,11 @@ results_to_se <- function(results, original_se = NULL) {
   rownames(assay_matrix) <- wide_results$Basename
   
   # Create column data with sample information
+  # Select only columns that exist
+  available_cols <- intersect(c("Basename", "Age", "Female", "Tissue", "SpeciesLatinName"), 
+                             colnames(results))
   col_data <- results %>%
-    dplyr::select(Basename, Age, Female, Tissue, SpeciesLatinName) %>%
+    dplyr::select(all_of(available_cols)) %>%
     dplyr::distinct()
   rownames(col_data) <- col_data$Basename
   
