@@ -44,22 +44,26 @@ EnsembleAge introduces several novel epigenetic clocks and addresses critical li
 
 #### Comprehensive Clock Collection
 Unlike existing packages that focus on individual clocks, EnsembleAge provides access to:
-- **All previously published mouse clocks** (e.g., Petkovich, Horvath, Stubbs, etc.)
-- **All previously published universal clocks** (e.g., Universal Methylation Age)
+- **All previously published mouse clocks** (e.g., Elastic Net Clocks, Lifespan Uber Clock, etc.)
+- **All previously published universal clocks** (e.g., Universal Methylation Age, etc.)
 - **Our novel ensemble clocks** that combine multiple validated approaches
 
 ### Comparison to Existing Solutions
 
 #### vs. methyclock and Similar Packages
-While packages like `methyclock` provide individual clock implementations, EnsembleAge offers:
+While packages like `methyclock` are primarily focused on human epigenetic clocks, EnsembleAge offers specialized functionality for mammalian arrays and mouse clocks:
 
-1. **Ensemble Robustness**: Rather than relying on single clocks that often yield inconsistent results, EnsembleAge integrates predictions from multiple penalized models, providing more reliable age estimates.
+1. **Mammalian Array Specialization**: Unlike `methyclock` which focuses on human arrays (EPIC/450k), EnsembleAge is specifically designed for mammalian methylation arrays (Mammal320k, Mammal40k) and provides comprehensive mouse clock implementations.
 
-2. **Comprehensive Coverage**: Includes both published clocks and our novel ensemble methods in a single, unified interface.
+2. **Mouse Clock Focus**: While `methyclock` provides human-centric clocks, EnsembleAge specializes in mouse epigenetic clocks, including all previously published mouse clocks and our novel ensemble approaches.
 
-3. **Cross-Species Validation**: Our clocks are specifically validated across multiple mammalian species, addressing the translational gap between mouse models and human studies.
+3. **Ensemble Robustness**: Rather than relying on single clocks that often yield inconsistent results, EnsembleAge integrates predictions from multiple penalized models, providing more reliable age estimates specifically for mouse models.
 
-4. **Intervention Detection**: Empirical evaluations demonstrate that EnsembleAge outperforms existing clocks in detecting both pro-aging and rejuvenating interventions.
+4. **Comprehensive Coverage**: Includes both published mouse clocks and our novel ensemble methods in a single, unified interface, while also providing universal clocks for cross-species comparisons.
+
+5. **Cross-Species Validation**: Our clocks are specifically validated across multiple mammalian species, addressing the translational gap between mouse models and human studies.
+
+6. **Intervention Detection**: Empirical evaluations demonstrate that EnsembleAge outperforms existing clocks in detecting both pro-aging and rejuvenating interventions in mouse models.
 
 #### Key Advantages Over Existing Approaches
 
