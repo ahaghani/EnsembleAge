@@ -29,19 +29,53 @@ EnsembleAge provides tools for predicting epigenetic age using various clock met
 
 This package accompanies the open access publication by Haghani et al. (2025): "EnsembleAge: enhancing epigenetic age assessment with a multi‑clock framework" in GeroScience (DOI: 10.1007/s11357-025-01808-1).
 
+**Abstract**: Several widely used epigenetic clocks have been developed for mice and other species, but a persistent challenge remains: different mouse clocks often yield inconsistent results. To address this limitation in robustness, we present EnsembleAge, a suite of ensemble-based epigenetic clocks. Leveraging data from over 200 perturbation experiments across multiple tissues, EnsembleAge integrates predictions from multiple penalized models. Empirical evaluations demonstrate that EnsembleAge outperforms existing clocks in detecting both pro-aging and rejuvenating interventions. Furthermore, we introduce EnsembleAge HumanMouse, an extension that enables cross-species analyses, facilitating translational research between mouse models and human studies. Together, these advances underscore the potential of EnsembleAge as a robust tool for identifying and validating interventions that modulate biological aging.
+
 ## Motivation and Comparison to Existing Packages
 
-EnsembleAge addresses several key limitations in existing epigenetic age prediction approaches:
+### Novel Contributions and Scientific Innovation
+
+EnsembleAge introduces several novel epigenetic clocks and addresses critical limitations in existing approaches. Our work leverages data from over 200 perturbation experiments across multiple tissues to develop robust ensemble-based epigenetic clocks that significantly outperform existing solutions.
+
+#### Novel Clock Development
+- **EnsembleAge Mouse Clocks**: Novel mouse-specific epigenetic clocks leveraging mammalian methylation arrays
+- **EnsembleAge Universal Clocks**: Cross-species clocks for translational research
+- **EnsembleAge HumanMouse**: Extension enabling cross-species analyses between mouse models and human studies
+
+#### Comprehensive Clock Collection
+Unlike existing packages that focus on individual clocks, EnsembleAge provides access to:
+- **All previously published mouse clocks** (e.g., Petkovich, Horvath, Stubbs, etc.)
+- **All previously published universal clocks** (e.g., Universal Methylation Age)
+- **Our novel ensemble clocks** that combine multiple validated approaches
+
+### Comparison to Existing Solutions
+
+#### vs. methyclock and Similar Packages
+While packages like `methyclock` provide individual clock implementations, EnsembleAge offers:
+
+1. **Ensemble Robustness**: Rather than relying on single clocks that often yield inconsistent results, EnsembleAge integrates predictions from multiple penalized models, providing more reliable age estimates.
+
+2. **Comprehensive Coverage**: Includes both published clocks and our novel ensemble methods in a single, unified interface.
+
+3. **Cross-Species Validation**: Our clocks are specifically validated across multiple mammalian species, addressing the translational gap between mouse models and human studies.
+
+4. **Intervention Detection**: Empirical evaluations demonstrate that EnsembleAge outperforms existing clocks in detecting both pro-aging and rejuvenating interventions.
+
+#### Key Advantages Over Existing Approaches
 
 1. **Platform Compatibility**: Unlike single-platform solutions, EnsembleAge automatically detects and handles multiple methylation array platforms (Human EPIC/450k, Mammal320k, Mammal40k).
 
-2. **Ensemble Approach**: Rather than relying on individual clocks, EnsembleAge combines multiple validated clock methods to provide more robust age predictions.
+2. **Ensemble Approach**: Combines multiple validated clock methods to provide more robust age predictions, addressing the inconsistency problem in existing mouse clocks.
 
 3. **Cross-Species Support**: While most existing packages focus on human data, EnsembleAge provides comprehensive support for mammalian species with specialized clocks.
 
 4. **Automated Preprocessing**: The package handles data orientation detection, probe mapping, and missing value imputation automatically.
 
 5. **Bioconductor Integration**: EnsembleAge works seamlessly with standard Bioconductor data structures and workflows, accepting preprocessed methylation data from packages like `sesame` and `minfi`.
+
+### Scientific Impact
+
+Our ensemble approach addresses a persistent challenge in the field: different mouse clocks often yield inconsistent results. By integrating predictions from multiple models trained on extensive perturbation data, EnsembleAge provides more reliable age estimates and better detection of aging interventions, making it a robust tool for identifying and validating interventions that modulate biological aging.
 
 ## Installation
 
