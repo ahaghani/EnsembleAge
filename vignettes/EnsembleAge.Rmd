@@ -17,7 +17,9 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.width = 7,
-  fig.height = 5
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE
 )
 ```
 
@@ -26,6 +28,18 @@ knitr::opts_chunk$set(
 EnsembleAge provides tools for predicting epigenetic age using various clock methods including Universal Clocks, Elastic Epigenetic clocks, static ensemble methods, and dynamic ensemble clocks. The package automatically detects your data platform and prepares the data accordingly for accurate age prediction across various tissues and species.
 
 This package accompanies the open access publication by Haghani et al. (2025): "EnsembleAge: enhancing epigenetic age assessment with a multi‑clock framework" in GeroScience (DOI: 10.1007/s11357-025-01808-1).
+
+## Motivation and Comparison to Existing Packages
+
+EnsembleAge addresses several key limitations in existing epigenetic age prediction approaches:
+
+1. **Platform Compatibility**: Unlike single-platform solutions, EnsembleAge automatically detects and handles multiple methylation array platforms (Human EPIC/450k, Mammal320k, Mammal40k).
+
+2. **Ensemble Approach**: Rather than relying on individual clocks, EnsembleAge combines multiple validated clock methods to provide more robust age predictions.
+
+3. **Cross-Species Support**: While most existing packages focus on human data, EnsembleAge provides comprehensive support for mammalian species with specialized clocks.
+
+4. **Automated Preprocessing**: The package handles data orientation detection, probe mapping, and missing value imputation automatically.
 
 ## Installation
 
@@ -39,18 +53,44 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 devtools::install_github("ahaghani/EnsembleAge")
 ```
 
-## Quick Start
+## Loading the Package
 
-The easiest way to predict epigenetic age:
-
-```{r quick_start, eval=FALSE}
+```{r load_package}
 library(EnsembleAge)
+```
 
-# Ultimate one-liner - automatically detects platform and runs predictions
-results <- predictEnsemble("path/to/methylation_data.RDS", "path/to/sample_sheet.csv")
+## Quick Start with Simulated Data
 
-# View predictions
-head(results)
+Let's demonstrate the package functionality with simulated methylation data:
+
+```{r create_simulated_data}
+# Create simulated mammal methylation data
+set.seed(123)
+n_probes <- 500  # Using subset for demonstration
+n_samples <- 6
+
+# Simulate methylation data with realistic beta values
+methylation_data <- data.frame(
+  CGid = paste0("cg", sprintf("%08d", sample(1:100000, n_probes))),
+  matrix(rbeta(n_probes * n_samples, 2, 2), nrow = n_probes, ncol = n_samples)
+)
+colnames(methylation_data)[-1] <- paste0("Sample_", sprintf("%02d", 1:n_samples))
+
+# Display first few rows
+head(methylation_data[, 1:4])
+```
+
+```{r create_sample_sheet}
+# Create corresponding sample sheet
+sample_sheet <- data.frame(
+  Basename = paste0("Sample_", sprintf("%02d", 1:n_samples)),
+  Age = c(0.5, 1.2, 2.1, 0.8, 1.5, 2.8),  # Ages in years
+  Female = c(1, 0, 1, 1, 0, 1),  # 1=female, 0=male
+  Tissue = "Blood",
+  SpeciesLatinName = "Mus musculus"
+)
+
+print(sample_sheet)
 ```
 
 **That's it!** EnsembleAge automatically:
@@ -71,39 +111,28 @@ EnsembleAge **automatically detects and handles** multiple methylation array pla
 | **Mammal320k** | ~320k | `.RDS`, `.csv` | ✅ Automatic |
 | **Mammal40k** | ~40k | `.RDS`, `.csv` | ✅ Automatic |
 
-## Simple Example
+## Core Functions Demonstration
 
-```{r example_simulated, eval=FALSE}
-library(EnsembleAge)
+Let's explore the key functions of EnsembleAge using our simulated data:
 
-# Create simulated mammal40k methylation data
-set.seed(123)
-n_probes <- 1000  # Using subset for example
-n_samples <- 10
+```{r detect_platform}
+# EnsembleAge automatically detects the data platform
+platform <- detect_platform(methylation_data)
+cat("Detected platform:", platform)
+```
 
-# Methylation data: probes as rows, samples as columns, with CGid
-methylation_data <- data.frame(
-  CGid = paste0("cg", sprintf("%08d", 1:n_probes)),
-  matrix(runif(n_probes * n_samples, 0.2, 0.8), nrow = n_probes, ncol = n_samples)
-)
-colnames(methylation_data)[-1] <- paste0("Sample_", sprintf("%02d", 1:n_samples))
+```{r check_coverage}
+# Check probe coverage for different clock families
+coverage_info <- check_probe_coverage(methylation_data)
+print(coverage_info)
+```
 
-# Sample sheet with required and optional columns
-sample_sheet <- data.frame(
-  Basename = paste0("Sample_", sprintf("%02d", 1:n_samples)),
-  Age = c(0.5, 1.2, 2.1, 0.8, 1.5, 2.8, 1.1, 0.9, 2.3, 1.7),
-  Female = c(1, 0, 1, 1, 0, 1, 0, 1, 0, 1),  # 1=female, 0=male
-  Tissue = "Blood",
-  SpeciesLatinName = "Mus musculus"
-)
+```{r preprocess_data}
+# Preprocess the methylation data
+preprocessed <- preprocess_methylation_data(methylation_data, sample_sheet, verbose = TRUE)
 
-# Run predictions
-results <- predictEnsemble(methylation_data, sample_sheet)
-
-# View results
-head(results)
-#   Basename  Age epiClock   epiAge AgeAcceleration Female Tissue clockFamily
-# 1 Sample_01 0.5   Static     0.8            0.12      1  Blood   Ensemble.Static
+# Display structure of preprocessed data
+str(preprocessed, max.level = 1)
 ```
 
 ## Data Requirements
@@ -130,70 +159,57 @@ head(results)
 | **LifespanUberClock** | Lifespan prediction | 12+ | Maximum lifespan focused clocks | [Lifespan Uber Clock](https://www.biorxiv.org/content/10.1101/2022.01.16.476530v1.full) |
 | **DNAmAge*** | Development/intervention | 39 | Development, Elastic, Intervention clocks | [Original Mammalian Clocks](https://elifesciences.org/articles/75244) |
 
-## Advanced Usage
+## Age Prediction Examples
 
-### Multiple Output Formats
+### Using Individual Clock Functions
 
-```{r advanced_usage, eval=FALSE}
-# Get long format (default) - best for analysis
-results_long <- predictEnsemble(methylation_data, sample_sheet, output_format = "long")
-
-# Get wide format - one row per sample
-results_wide <- predictEnsemble(methylation_data, sample_sheet, output_format = "wide") 
-
-# Get both formats
-results_both <- predictEnsemble(methylation_data, sample_sheet, output_format = "both")
+```{r individual_clocks}
+# Predict using ensemble static clocks (recommended for general use)
+static_results <- predict_ensemble_static(methylation_data, sample_sheet, verbose = FALSE)
+head(static_results)
 ```
 
-### Working with Files vs Objects
-
-```{r file_usage, eval=FALSE}
-# Using file paths
-results <- predictEnsemble("methylation.RDS", "samples.csv")
-
-# Using R objects directly  
-results <- predictEnsemble(my_methylation_df, my_sample_df)
-
-# Mixed approach
-results <- predictEnsemble("methylation.RDS", my_sample_df)
+```{r dual_clocks}
+# Predict using dual-species clocks (good for cross-species studies)
+dual_results <- predict_ensemble_dual_static(methylation_data, sample_sheet, verbose = FALSE)
+head(dual_results)
 ```
 
-### Auto-generate Sample Sheet
+### Using the Master Function
 
-```{r template_usage, eval=FALSE}
-# If you don't have a sample sheet, let EnsembleAge create a template
-results <- predictEnsemble(methylation_data, samples = NULL)
+```{r predict_all}
+# Run all available clocks
+all_results <- predict_all_clocks(methylation_data, sample_sheet, verbose = FALSE)
 
-# This creates 'user_data_sample_sheet_template.csv' 
-# Fill it out with your actual sample information and rerun
+# Summary of results
+cat("Total predictions:", nrow(all_results), "\n")
+cat("Clock families used:", length(unique(all_results$clockFamily)), "\n")
+cat("Individual clocks used:", length(unique(all_results$epiClock)), "\n")
+
+# Show unique clock families
+unique(all_results$clockFamily)
 ```
 
-### Result Saving Control
+### Sample Sheet Template Creation
 
-```{r saving_control, eval=FALSE}
-# Default: saves to current directory with automatic naming
-results <- predictEnsemble("data.RDS", "samples.csv")
-# Creates: EnsembleAge_data_long_20250811_143052.csv
+```{r template_demo}
+# Create a sample sheet template
+template_path <- tempfile(fileext = ".csv")
+sample_names <- colnames(methylation_data)[-1]  # Exclude CGid column
 
-# Custom directory and prefix
-results <- predictEnsemble("data.RDS", "samples.csv", 
-                          output_dir = "results/", 
-                          output_prefix = "MouseStudy")
+template <- create_sample_sheet_template(
+  sample_names = sample_names,
+  file_path = template_path
+)
 
-# Custom filename
-results <- predictEnsemble("data.RDS", "samples.csv", 
-                          output_filename = "my_results.csv")
-
-# Turn off saving (just return results)
-results <- predictEnsemble("data.RDS", "samples.csv", 
-                          save_results = FALSE)
+print(template)
 ```
 
 ## Understanding Results
 
 ### Output Format
 
-The `predictEnsemble` function returns a data frame with the following columns:
+All prediction functions return a data frame with the following key columns:
 
 - **`Basename`**: Sample identifier
 - **`Age`**: Chronological age from sample sheet
@@ -203,11 +219,47 @@ The `predictEnsemble` function returns a data frame with the following columns:
 - **`clockFamily`**: Clock family category
 - Additional sample sheet columns (Female, Tissue, etc.)
 
+### Analyzing Results
+
+```{r analyze_results}
+# Analyze the age predictions
+if (exists("all_results") && nrow(all_results) > 0) {
+  # Calculate summary statistics by clock family
+  library(dplyr)
+  
+  summary_stats <- all_results %>%
+    group_by(clockFamily) %>%
+    summarise(
+      n_predictions = n(),
+      mean_age = round(mean(Age, na.rm = TRUE), 2),
+      mean_epi_age = round(mean(epiAge, na.rm = TRUE), 2),
+      mean_acceleration = round(mean(AgeAccelation, na.rm = TRUE), 3),
+      .groups = 'drop'
+    )
+  
+  print(summary_stats)
+}
+```
+
 ### Interpretation
 
 - **Positive age acceleration**: Sample appears older than chronological age
 - **Negative age acceleration**: Sample appears younger than chronological age  
 - **Multiple clocks per sample**: Each row represents one clock's prediction for one sample
+
+```{r plot_results, fig.height=4, fig.width=6}
+# Visualize age predictions vs chronological age
+if (exists("static_results") && nrow(static_results) > 0) {
+  plot(static_results$Age, static_results$epiAge,
+       xlab = "Chronological Age (years)",
+       ylab = "Predicted Epigenetic Age (years)",
+       main = "EnsembleAge Predictions",
+       pch = 16, col = "blue")
+  abline(0, 1, col = "red", lty = 2)  # Perfect prediction line
+  legend("topleft", legend = c("Predictions", "Perfect prediction"), 
+         col = c("blue", "red"), pch = c(16, NA), lty = c(NA, 2))
+}
+```
 
 ## Citation
 
