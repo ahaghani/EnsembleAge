@@ -169,7 +169,7 @@ efficiently_load_clock_data <- function(dat0sesame, samps, required_probes = NUL
 #' @examples
 #' # Create and save template
 #' template <- load_sample_sheet_template("my_samples_template.csv", n_samples = 50)
-load_sample_sheet_template <- function(file_path = "sample_sheet_template.csv", 
+load_sample_sheet_template <- function(file_path = system.file("extdata", "sample_sheet_template.csv", package = "EnsembleAge"), 
                                       sample_names = NULL, n_samples = 20) {
   
   if (is.null(sample_names)) {

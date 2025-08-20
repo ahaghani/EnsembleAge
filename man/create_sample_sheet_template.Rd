@@ -30,5 +30,5 @@ my_samples <- c("sample1", "sample2", "sample3")
 template <- create_sample_sheet_template(sample_names = my_samples)
 
 # Create template and save to file
-create_sample_sheet_template(n_samples = 20, file_path = "sample_sheet_template.csv")
+create_sample_sheet_template(n_samples = 20, file_path = system.file("extdata", "sample_sheet_template.csv", package = "EnsembleAge"))
 }

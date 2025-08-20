@@ -5,13 +5,13 @@
 \title{Load sample sheet template}
 \usage{
 load_sample_sheet_template(
-  file_path = "sample_sheet_template.csv",
+  file_path = system.file("extdata", "sample_sheet_template.csv", package = "EnsembleAge"),
   sample_names = NULL,
   n_samples = 20
 )
 }
 \arguments{
-\item{file_path}{Path where to save the template (default: "sample_sheet_template.csv")}
+\item{file_path}{Path where to save the template (default: system.file("extdata", "sample_sheet_template.csv", package = "EnsembleAge"))}
 
 \item{sample_names}{Optional character vector of sample names}
 

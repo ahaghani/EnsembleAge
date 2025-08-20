@@ -179,7 +179,7 @@ detect_and_fix_orientation <- function(dat0sesame, samps = NULL, verbose = TRUE)
 #' 
 #' # Create template and save to file
 #' create_sample_sheet_template(n_samples = 20, file_path = "sample_sheet_template.csv")
-create_sample_sheet_template <- function(sample_names = NULL, n_samples = 10, file_path = NULL) {
+create_sample_sheet_template <- function(sample_names = NULL, n_samples = 10, file_path = system.file("extdata", "sample_sheet_template.csv", package = "EnsembleAge")) {
   
   if (is.null(sample_names)) {
     sample_names <- paste0("Sample_", sprintf("%03d", 1:n_samples))
