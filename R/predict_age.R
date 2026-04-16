@@ -133,8 +133,9 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
   dat0sesame <- dat0sesame %>% 
     tibble::column_to_rownames("CGid") %>% 
     t(.) %>% 
-    as.data.frame(.) %>% 
-    mutate('Intercept' = 1)
+    as.data.frame(.)
+  rownames(dat0sesame) <- NULL
+  dat0sesame <- dat0sesame %>% mutate('Intercept' = 1)
   
   samps <- samps %>% left_join(species, by = "SpeciesLatinName")
   
@@ -158,7 +159,8 @@ predictAgeAndAgeAcc <- function(dat0sesame, samps) {
       
       dat1 <- dat0sesame %>% dplyr::select(clock$CGid)
       
-      if (grepl("AgeTraf", names(epiclocks)[j])) {
+      if (grepl("AgeTraf", names(epiclocks)[j]) || 
+          names(epiclocks)[j] %in% c("DNAmAgeDevelopmentFinal", "DNAmAgeElasticFinal", "DNAmAgeInterventionFinal")) {
         samp <- samps %>%
           # predicting age
           mutate(epiAge = as.numeric(as.matrix(dat1) %*% clock$Coef)) %>% 

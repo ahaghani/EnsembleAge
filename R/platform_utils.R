@@ -469,9 +469,16 @@ process_mammal320k_data <- function(mammal320Data, sample_sheet, species = "mous
   # Step 4: Your exact workflow - select geneMap320 probes, transpose, map
   # Check data format and find probe IDs
   if ("CGid" %in% names(normalized_betas_sesame2)) {
-    # Data already processed with CGid column
-    if (verbose) cat("Data already has CGid column, skipping processing...\n")
-    return(normalized_betas_sesame2)
+    # CGid can represent either final mapped CpG IDs or raw Mammal320k Probe_ID-style values.
+    # Only skip when IDs do not look like Probe_IDs (e.g., "_BC21" suffixes).
+    cgid_subset <- normalized_betas_sesame2$CGid[1:min(1000, nrow(normalized_betas_sesame2))]
+    probe_style_cgid <- sum(grepl("_[A-Z]+[0-9]*$", cgid_subset)) > 10
+    if (!probe_style_cgid) {
+      if (verbose) cat("Data already has mapped CGid column, skipping processing...\n")
+      return(normalized_betas_sesame2)
+    }
+    if (verbose) cat("CGid contains Mammal320k Probe_ID-style values. Continuing annotation mapping...\n")
+    probe_ids <- normalized_betas_sesame2$CGid
   } else if (nrow(normalized_betas_sesame2) > ncol(normalized_betas_sesame2)) {
     # Data is probes x samples (already transposed)
     probe_ids <- rownames(normalized_betas_sesame2)
@@ -494,14 +501,23 @@ process_mammal320k_data <- function(mammal320Data, sample_sheet, species = "mous
   }
   
   # Process data based on orientation
-  if (nrow(normalized_betas_sesame2) > ncol(normalized_betas_sesame2)) {
+  if ("CGid" %in% names(normalized_betas_sesame2)) {
+    # Already probe x sample with Probe_ID-style IDs in CGid column
+    if (verbose) cat("Processing data frame with Probe_ID-style CGid column...\n")
+    dat <- normalized_betas_sesame2 %>%
+      dplyr::filter(CGid %in% available_probes) %>%
+      dplyr::rename(Probe_ID = CGid) %>%
+      left_join(dplyr::select(.data = geneMap320_local, Probe_ID, CGid), by = "Probe_ID") %>%
+      dplyr::select(-Probe_ID) %>%
+      dplyr::relocate(CGid, 1)
+  } else if (nrow(normalized_betas_sesame2) > ncol(normalized_betas_sesame2)) {
     # Data is probes x samples (already transposed)
     if (verbose) cat("Processing probes x samples data...\n")
     dat <- as.data.frame(normalized_betas_sesame2)[available_probes, ] %>% 
       tibble::rownames_to_column(var = "Probe_ID") %>% 
       left_join(dplyr::select(.data = geneMap320_local, Probe_ID, CGid), by = "Probe_ID") %>% 
       dplyr::select(-Probe_ID) %>% 
-      relocate(CGid, 1)
+      dplyr::relocate(CGid, 1)
   } else {
     # Data is samples x probes (original format) - use your exact workflow
     if (verbose) cat("Processing samples x probes data (original format)...\n")
@@ -512,7 +528,7 @@ process_mammal320k_data <- function(mammal320Data, sample_sheet, species = "mous
       tibble::rownames_to_column(var = "Probe_ID") %>% 
       left_join(dplyr::select(.data = geneMap320_local, Probe_ID, CGid), by = "Probe_ID") %>% 
       dplyr::select(-Probe_ID) %>% 
-      relocate(CGid, 1)
+      dplyr::relocate(CGid, 1)
   }
   
   if (verbose) {
@@ -526,25 +542,25 @@ process_mammal320k_data <- function(mammal320Data, sample_sheet, species = "mous
   # Following Amin's exact code for missing probes
   if (species == "mouse" && !is.null(medians)) {
     missingProbes <- mammalianArray %>% 
-      filter(!CGid %in% geneMap320_local$CGid) %>% 
-      left_join(medians, by = c("CGid" = "CpG")) %>% 
-      filter(!is.na(mouse_median))
+      dplyr::filter(!CGid %in% geneMap320_local$CGid) %>% 
+      dplyr::left_join(medians, by = c("CGid" = "CpG")) %>% 
+      dplyr::filter(!is.na(mouse_median))
     if (verbose) cat("Mouse missing probes:", nrow(missingProbes), "\n")
   }
   
   if (species == "rat" && !is.null(medianRat)) {
     missingProbesRat <- mammalianArray %>% 
-      filter(!CGid %in% geneMap320_local$CGid) %>% 
-      left_join(medianRat, by = c("CGid" = "CpG")) %>% 
-      filter(!is.na(mouse_median))
+      dplyr::filter(!CGid %in% geneMap320_local$CGid) %>% 
+      dplyr::left_join(medianRat, by = c("CGid" = "CpG")) %>% 
+      dplyr::filter(!is.na(mouse_median))
     if (verbose) cat("Rat missing probes:", nrow(missingProbesRat), "\n")
   }
   
   if (species == "human" && !is.null(medianHuman)) {
     missingProbesHuman <- mammalianArray %>% 
-      filter(!CGid %in% geneMap320_local$CGid) %>% 
-      left_join(medianHuman, by = c("CGid" = "CGid")) %>% 
-      filter(!is.na(mouse_median))
+      dplyr::filter(!CGid %in% geneMap320_local$CGid) %>% 
+      dplyr::left_join(medianHuman, by = c("CGid" = "CGid")) %>% 
+      dplyr::filter(!is.na(mouse_median))
     if (verbose) cat("Human missing probes:", nrow(missingProbesHuman), "\n")
   }
   
@@ -577,10 +593,10 @@ process_mammal320k_data <- function(mammal320Data, sample_sheet, species = "mous
         }
         return(a)
       })) %>% 
-        spread(key = "var", value = "mouse_median") %>% 
+        tidyr::spread(key = "var", value = "mouse_median") %>% 
         dplyr::select(names(dat))
       
-      dat <- bind_rows(dat, dat2)
+      dat <- dplyr::bind_rows(dat, dat2)
       if (verbose) cat("Final data after imputation:", nrow(dat), "CpG sites\n")
     } else {
       if (verbose) cat("Warning: No sample columns for imputation\n")

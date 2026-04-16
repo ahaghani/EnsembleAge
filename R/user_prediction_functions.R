@@ -33,9 +33,19 @@ predict_ensemble_static <- function(dat0sesame, samps, efficient_loading = TRUE,
     stop("Long format results not available. Please check the prediction function.")
   }
   
-  # Filter to only EnsembleAge.Static results (includes both Ensemble.Static and EnsembleAge.Static)
+  # Static outputs: main Ensemble.Static clocks plus Steve-style finals (elastic / development /
+  # intervention), universal clocks, lifespan clock, and any AgeTraf-named families. Excluded
+  # here are only EnsembleAge.Dynamic and EnsembleDualAge.Static (handled by other predict_*).
+  static_clock_families <- c(
+    "LifespanUberClock", "DNAmAgeElasticFinal", "DNAmAgeInterventionFinal", "DNAmAgeDevelopmentFinal",
+    "UniClock2", "UniClock3", "Ensemble.Static", "Ensemble.Static.Top"
+  )
   static_results <- all_results %>%
-    dplyr::filter(grepl("Ensemble.*\\.Static", clockFamily)) %>%
+    dplyr::filter(
+      .data$clockFamily %in% static_clock_families |
+        grepl("Ensemble.*\\.Static", .data$clockFamily) |
+        grepl("AgeTraf", as.character(.data$clockFamily))
+    ) %>%
     dplyr::select(Basename, Age, epiClock, epiAge, AgeAccelation, Female, Tissue, clockFamily)
   
   if (verbose) {
